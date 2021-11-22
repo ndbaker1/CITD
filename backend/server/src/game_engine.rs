@@ -112,7 +112,7 @@ pub async fn handle_event(
             }
 
             println!(
-                "[event] created session :: session count: {}",
+                "[EVENT] created session :: session count: {}",
                 sessions.read().await.len()
             );
         }
@@ -128,10 +128,10 @@ pub async fn handle_event(
             remove_client_from_current_session(client_id, clients, sessions, game_states).await;
 
             if let Some(session) = sessions.write().await.get_mut(&session_id) {
-                if let Some(_) = game_states.read().await.get(&session_id) {
-                    return; // do not allow clients to join an active game
+                if game_states.read().await.get(&session_id).is_none() {
+                    // do not allow clients to join an active game
+                    insert_client_into_given_session(client_id, &clients, session).await;
                 }
-                insert_client_into_given_session(client_id, &clients, session).await;
             } else {
                 if let Some(client) = clients.read().await.get(client_id) {
                     notify_client(
@@ -166,6 +166,7 @@ pub async fn handle_event(
                             .write()
                             .await
                             .insert(session_id.clone(), game_state.clone());
+
                         // signal the turn start
                         notify_session(
                             &shared_types::EventBuilder::default()
@@ -181,6 +182,7 @@ pub async fn handle_event(
                         eprintln!("[error] {}", msg);
                         notify_session(
                             &shared_types::EventBuilder::default()
+                                .event_code(shared_types::ServerEventCode::LogicError)
                                 .message(Some(msg.to_string()))
                                 .build()
                                 .unwrap(),
@@ -198,29 +200,45 @@ pub async fn handle_event(
                 None => return,
             };
 
+            let column = match client_event.data {
+                Some(data) => data.column.unwrap(),
+                None => return,
+            };
+
             if let Some(game_state) = game_states.write().await.get_mut(&session_id) {
                 // incriment index and wrap around
                 game_state.turn_index =
                     (game_state.turn_index + 1) % game_state.player_turn_order.len();
 
-                if let Some(session) = sessions.read().await.get(&session_id) {
-                    notify_session(
-                        &shared_types::EventBuilder::default()
-                            .event_code(shared_types::ServerEventCode::TurnStart)
-                            .data(Some(
-                                shared_types::ServerEventDataBuilder::default()
-                                    .client_id(Some(
-                                        game_state.player_turn_order[game_state.turn_index].clone(),
+                let player_index = match game_state.get_player_index(client_id) {
+                    Some(index) => index,
+                    None => return,
+                };
+
+                match game_state.play(column, player_index) {
+                    Ok(_) => {
+                        if let Some(session) = sessions.read().await.get(&session_id) {
+                            notify_session(
+                                &shared_types::EventBuilder::default()
+                                    .event_code(shared_types::ServerEventCode::TurnStart)
+                                    .data(Some(
+                                        shared_types::ServerEventDataBuilder::default()
+                                            .client_id(Some(
+                                                game_state.player_turn_order[game_state.turn_index]
+                                                    .clone(),
+                                            ))
+                                            .build()
+                                            .unwrap(),
                                     ))
                                     .build()
                                     .unwrap(),
-                            ))
-                            .build()
-                            .unwrap(),
-                        &session,
-                        clients,
-                    )
-                    .await;
+                                &session,
+                                clients,
+                            )
+                            .await;
+                        }
+                    }
+                    Err(s) => {}
                 }
             }
         }

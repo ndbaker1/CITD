@@ -33,6 +33,7 @@ pub struct ServerEventData {
 pub struct ClientEventData {
     pub target_ids: Option<Vec<String>>,
     pub session_id: Option<String>,
+    pub column: Option<usize>,
 }
 
 #[derive(Serialize_repr, Clone)]
