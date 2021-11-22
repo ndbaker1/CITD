@@ -1,7 +1,7 @@
 use crate::{data_types, game_engine};
 use futures::{FutureExt, StreamExt};
 use sessions::session_types;
-use tokio::sync::mpsc;
+use tokio::sync::mpsc::{self};
 use warp::ws::{Message, WebSocket};
 
 /// The Initial Setup for a WebSocket Connection
@@ -32,7 +32,7 @@ pub async fn client_connection(
     //======================================================
     tokio::task::spawn(client_rcv.forward(client_ws_sender).map(|result| {
         if let Err(e) = result {
-            eprintln!("[error] failed to send websocket msg: {}", e);
+            eprintln!("[ERROR] failed to send websocket msg: {}", e);
         }
     }));
     //======================================================
@@ -67,7 +67,7 @@ pub async fn client_connection(
             }
             Err(e) => {
                 eprintln!(
-                    "[error] failed to recieve websocket message for id: {} :: error: {}",
+                    "[ERROR] failed to recieve websocket message for id: {} :: error: {}",
                     id.clone(),
                     e,
                 );
@@ -107,7 +107,7 @@ async fn handle_client_msg(
         // ignore pings
         //======================================================
         "ping" | "ping\n" => {
-            println!("[EVENT] ignoring ping...");
+            println!("[INFO] ignoring ping...");
         }
         //======================================================
         // Game Session Related Events
@@ -126,7 +126,7 @@ async fn handle_client_disconnect(
     sessions: &data_types::SafeSessions,
     game_states: &data_types::SafeGameStates,
 ) {
-    println!("[EVENT] {} disconnected", client.id);
+    println!("[INFO] {} disconnected", client.id);
     if let Some(session_id) = &client.session_id {
         let mut session_empty = false;
         // remove the client from the session and check if the session become empty
@@ -146,7 +146,7 @@ async fn handle_client_connect(
     client: &session_types::Client,
     sessions: &data_types::SafeSessions,
 ) {
-    println!("[EVENT] {} connected", client.id);
+    println!("[INFO] {} connected", client.id);
     if let Some(session_id) = &client.session_id {
         if let Some(session) = sessions.write().await.get_mut(session_id) {
             session.set_client_active_status(&client.id, true);
@@ -179,7 +179,7 @@ pub async fn cleanup_session(
     game_states.write().await.remove(session_id);
     // log
     println!(
-        "[EVENT] removed empty session :: remaining session count: {}",
+        "[INFO] removed empty session :: remaining session count: {}",
         sessions.read().await.len()
     );
 }

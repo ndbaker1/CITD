@@ -14,7 +14,9 @@ pub struct GameData {
 #[derive(Deserialize, Serialize, Builder)]
 pub struct Event<Code, PayloadType> {
     pub event_code: Code,
+    #[builder(setter(into, strip_option), default)]
     pub message: Option<String>,
+    #[builder(setter(into, strip_option), default)]
     pub data: Option<PayloadType>,
 }
 
@@ -23,16 +25,23 @@ pub type ClientEvent = Event<ClientEventCode, ClientEventData>;
 
 #[derive(Serialize, Clone, Builder)]
 pub struct ServerEventData {
+    #[builder(setter(into, strip_option), default)]
     pub session_id: Option<String>,
+    #[builder(setter(into, strip_option), default)]
     pub client_id: Option<String>,
+    #[builder(setter(into, strip_option), default)]
     pub session_client_ids: Option<Vec<String>>,
+    #[builder(setter(into, strip_option), default)]
     pub game_data: Option<GameData>,
 }
 
 #[derive(Deserialize, Builder)]
 pub struct ClientEventData {
+    #[builder(setter(into, strip_option), default)]
     pub target_ids: Option<Vec<String>>,
+    #[builder(setter(into, strip_option), default)]
     pub session_id: Option<String>,
+    #[builder(setter(into, strip_option), default)]
     pub column: Option<usize>,
 }
 

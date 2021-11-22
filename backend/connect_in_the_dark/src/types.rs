@@ -29,6 +29,10 @@ impl GameState {
         }
     }
 
+    pub fn get_turn_player(&self) -> String {
+        self.player_turn_order[self.turn_index].clone()
+    }
+
     pub fn get_player_index(&self, player_id: &str) -> Option<usize> {
         self.player_turn_order.iter().position(|id| id == player_id)
     }

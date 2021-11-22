@@ -9,7 +9,7 @@ from pathlib import Path
 ROOT_DEPTH = 2  # relies on being in directory /shared/scripts
 ROOT_DIR = str(Path(__file__).resolve().parents[ROOT_DEPTH]).replace('\\', '/')
 
-EVENT_TYPES_RUST_PATH = ROOT_DIR + '/server/src/shared_types.rs'
+EVENT_TYPES_RUST_PATH = ROOT_DIR + '/backend/server/src/shared_types.rs'
 EVENT_TYPES_TYPESCRIPT_PATH = ROOT_DIR + '/frontend/src/utils/shared-types.ts'
 
 
