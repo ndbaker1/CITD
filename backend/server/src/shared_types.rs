@@ -1,16 +1,9 @@
 /**
  * This file contains type defintions which are shared between the front and back end applications
  */
+use derive_builder::Builder;
 use serde::{Deserialize, Serialize};
 use serde_repr::{Deserialize_repr, Serialize_repr};
-
-#[derive(Serialize)]
-pub struct ServerEventData {
-    pub session_id: Option<String>,
-    pub client_id: Option<String>,
-    pub session_client_ids: Option<Vec<String>>,
-    pub game_data: Option<GameData>,
-}
 
 #[derive(Serialize, Debug, Clone)]
 pub struct GameData {
@@ -18,45 +11,60 @@ pub struct GameData {
     pub player_order: Vec<String>,
 }
 
-#[derive(Serialize)]
-pub struct ServerEvent {
-    pub event_code: ServerEventCode,
+#[derive(Deserialize, Serialize, Builder)]
+pub struct Event<Code, PayloadType> {
+    pub event_code: Code,
     pub message: Option<String>,
-    pub data: Option<ServerEventData>,
+    pub data: Option<PayloadType>,
 }
 
-#[derive(Serialize_repr)]
-#[repr(u8)]
-pub enum ServerEventCode {
-    // session_id, client_id, session_client_ids
-    ClientJoined = 1,
-    // client_id
-    ClientLeft,
-    GameStarted,
-    // session_id, session_client_ids
-    DataResponse,
-    // client_id
-    TurnStart,
-    LogicError,
+pub type ServerEvent = Event<ServerEventCode, ServerEventData>;
+pub type ClientEvent = Event<ClientEventCode, ClientEventData>;
+
+#[derive(Serialize, Clone, Builder)]
+pub struct ServerEventData {
+    pub session_id: Option<String>,
+    pub client_id: Option<String>,
+    pub session_client_ids: Option<Vec<String>>,
+    pub game_data: Option<GameData>,
 }
 
-#[derive(Deserialize)]
-pub struct ClientEvent {
-    pub event_code: ClientEventCode,
+#[derive(Deserialize, Builder)]
+pub struct ClientEventData {
     pub target_ids: Option<Vec<String>>,
     pub session_id: Option<String>,
+}
+
+#[derive(Serialize_repr, Clone)]
+#[repr(u8)]
+pub enum ServerEventCode {
+    /**
+     * Session Related
+     */
+    ClientJoined = 1,
+    ClientLeft,
+    GameStarted,
+    SessionResponse,
+    /**
+     * Game Related
+     */
+    TurnStart,
+    LogicError,
 }
 
 #[derive(Deserialize_repr)]
 #[repr(u8)]
 pub enum ClientEventCode {
-    // session_id
+    /**
+     * Session Related Events
+     */
     JoinSession = 1,
     CreateSession,
     LeaveSession,
-    DataRequest,
+    SessionRequest,
+    /**
+     * Game Related Events
+     */
     StartGame,
-    EndTurn,
-    PlayCard,
-    StateResponse,
+    Play,
 }

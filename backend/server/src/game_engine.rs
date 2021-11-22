@@ -1,5 +1,9 @@
-use crate::{data_types, shared_types, ws::cleanup_session};
-use connect_in_the_dark::types::GameState;
+use crate::{
+    data_types,
+    shared_types::{self, GameData},
+    ws::cleanup_session,
+};
+use connect_in_the_dark::types::{create_game_board, GameState};
 use nanoid::nanoid;
 use nanorand::{WyRand, RNG};
 use serde_json::from_str;
@@ -7,31 +11,15 @@ use sessions::session_types;
 use std::collections::HashMap;
 use warp::ws::Message;
 
-// Helper constructors for different kinds of ServerEvents
-impl shared_types::ServerEvent {
-    pub fn from_error(message: &str) -> shared_types::ServerEvent {
-        println!("[ServerEventError] {}", message);
-        shared_types::ServerEvent {
-            event_code: shared_types::ServerEventCode::LogicError,
-            message: Some(message.to_string()),
-            data: None,
-        }
-    }
-    pub fn from_event(
-        event_code: shared_types::ServerEventCode,
-        data: shared_types::ServerEventData,
-    ) -> shared_types::ServerEvent {
-        shared_types::ServerEvent {
-            event_code,
-            data: Some(data),
-            message: None,
-        }
-    }
-    pub fn empty(event_code: shared_types::ServerEventCode) -> shared_types::ServerEvent {
-        shared_types::ServerEvent {
-            event_code,
-            data: None,
-            message: None,
+trait ShareableGameData {
+    fn as_shared_game_data(&self) -> GameData;
+}
+
+impl ShareableGameData for GameState {
+    fn as_shared_game_data(&self) -> GameData {
+        GameData {
+            player_order: self.player_turn_order.clone(),
+            turn_index: self.turn_index,
         }
     }
 }
@@ -60,33 +48,33 @@ pub async fn handle_event(
     };
 
     match client_event.event_code {
-        shared_types::ClientEventCode::DataRequest => {
+        shared_types::ClientEventCode::SessionRequest => {
             let session_id: String = match get_client_session_id(client_id, clients).await {
-                Some(s_id) => s_id,
+                Some(session_id) => session_id,
                 None => return, // no session is ok
             };
 
-            let mut server_event: shared_types::ServerEvent = shared_types::ServerEvent::from_event(
-                shared_types::ServerEventCode::DataResponse,
-                shared_types::ServerEventData {
-                    session_id: Some(session_id.clone()),
-                    client_id: None,
-                    session_client_ids: None,
-                    game_data: None,
-                },
-            );
+            let mut server_event: shared_types::ServerEvent = shared_types::EventBuilder::default()
+                .event_code(shared_types::ServerEventCode::SessionResponse)
+                .data(Some(
+                    shared_types::ServerEventDataBuilder::default()
+                        .build()
+                        .unwrap(),
+                ))
+                .build()
+                .unwrap();
 
-            // if let Some(client) = clients.read().await.get(client_id) {
-            //     if let Some(data) = server_event.data.as_mut() {
-            //         if let Some(session) = sessions.read().await.get(&session_id) {
-            //             data.session_client_ids = Some(session.get_client_ids());
-            //         }
-            //         if let Some(game_state) = game_states.read().await.get(&session_id) {
-            //             data.game_data = Some(game_state.to_game_data());
-            //         }
-            //     }
-            //     notify_client(&server_event, client);
-            // }
+            if let Some(client) = clients.read().await.get(client_id) {
+                if let Some(data) = server_event.data.as_mut() {
+                    if let Some(session) = sessions.read().await.get(&session_id) {
+                        data.session_client_ids = Some(session.get_client_ids());
+                    }
+                    if let Some(game_state) = game_states.read().await.get(&session_id) {
+                        data.game_data = Some(game_state.as_shared_game_data());
+                    }
+                }
+                notify_client(&server_event, client);
+            }
         }
         shared_types::ClientEventCode::CreateSession => {
             let session = &mut session_types::Session {
@@ -107,15 +95,18 @@ pub async fn handle_event(
 
             if let Some(client) = clients.read().await.get(client_id) {
                 notify_client(
-                    &shared_types::ServerEvent::from_event(
-                        shared_types::ServerEventCode::ClientJoined,
-                        shared_types::ServerEventData {
-                            session_id: Some(session.id.clone()),
-                            client_id: Some(client_id.to_string()),
-                            session_client_ids: Some(session.get_client_ids()),
-                            game_data: None,
-                        },
-                    ),
+                    &shared_types::EventBuilder::default()
+                        .event_code(shared_types::ServerEventCode::ClientJoined)
+                        .data(Some(
+                            shared_types::ServerEventDataBuilder::default()
+                                .session_id(Some(session.id.clone()))
+                                .client_id(Some(client_id.to_string()))
+                                .session_client_ids(Some(session.get_client_ids()))
+                                .build()
+                                .unwrap(),
+                        ))
+                        .build()
+                        .unwrap(),
                     &client,
                 );
             }
@@ -126,8 +117,11 @@ pub async fn handle_event(
             );
         }
         shared_types::ClientEventCode::JoinSession => {
-            let session_id = match client_event.session_id {
-                Some(s_id) => s_id,
+            let session_id = match client_event.data {
+                Some(data) => match data.session_id {
+                    Some(session_id) => session_id,
+                    None => panic!("no session id found!"),
+                },
                 None => return, // no session was found on a session join request? ¯\(°_o)/¯
             };
 
@@ -141,10 +135,10 @@ pub async fn handle_event(
             } else {
                 if let Some(client) = clients.read().await.get(client_id) {
                     notify_client(
-                        &shared_types::ServerEvent::from_error(&format!(
-                            "Invalid SessionID: {}",
-                            session_id
-                        )),
+                        &shared_types::EventBuilder::default()
+                            .message(Some(format!("Invalid SessionID: {}", session_id)))
+                            .build()
+                            .unwrap(),
                         &client,
                     );
                 }
@@ -162,30 +156,34 @@ pub async fn handle_event(
             if let Some(session) = sessions.read().await.get(&session_id) {
                 match initialize_game_data(&session.get_client_ids()) {
                     Ok(player_turn_order) => {
-                        // let game_state = GameState {
-                        //     turn_index: 0,
-                        //     player_turn_order,
-                        //     board:
-                        // };
+                        let game_state = GameState {
+                            turn_index: 0,
+                            player_turn_order,
+                            board: create_game_board(5, 5),
+                        };
 
-                        // game_states
-                        //     .write()
-                        //     .await
-                        //     .insert(session_id.clone(), game_state.clone());
-                        // // signal the turn start
-                        // notify_session(
-                        //     &shared_types::ServerEvent::empty(
-                        //         shared_types::ServerEventCode::TurnStart,
-                        //     ),
-                        //     session,
-                        //     clients,
-                        // )
-                        // .await;
+                        game_states
+                            .write()
+                            .await
+                            .insert(session_id.clone(), game_state.clone());
+                        // signal the turn start
+                        notify_session(
+                            &shared_types::EventBuilder::default()
+                                .event_code(shared_types::ServerEventCode::TurnStart)
+                                .build()
+                                .unwrap(),
+                            session,
+                            clients,
+                        )
+                        .await;
                     }
                     Err(msg) => {
                         eprintln!("[error] {}", msg);
                         notify_session(
-                            &shared_types::ServerEvent::from_error(msg),
+                            &shared_types::EventBuilder::default()
+                                .message(Some(msg.to_string()))
+                                .build()
+                                .unwrap(),
                             &session,
                             &clients,
                         )
@@ -194,7 +192,7 @@ pub async fn handle_event(
                 }
             }
         }
-        shared_types::ClientEventCode::EndTurn => {
+        shared_types::ClientEventCode::Play => {
             let session_id: String = match get_client_session_id(client_id, clients).await {
                 Some(s_id) => s_id,
                 None => return,
@@ -206,26 +204,26 @@ pub async fn handle_event(
                     (game_state.turn_index + 1) % game_state.player_turn_order.len();
 
                 if let Some(session) = sessions.read().await.get(&session_id) {
-                    // notify_session(
-                    //     &shared_types::ServerEvent::from_event(
-                    //         shared_types::ServerEventCode::TurnStart,
-                    //         shared_types::ServerEventData {
-                    //             session_id: None,
-                    //             client_id: Some(
-                    //                 game_state.player_order[game_state.turn_index].clone(),
-                    //             ),
-                    //             session_client_ids: None,
-                    //             game_data: None,
-                    //         },
-                    //     ),
-                    //     &session,
-                    //     clients,
-                    // )
-                    // .await;
+                    notify_session(
+                        &shared_types::EventBuilder::default()
+                            .event_code(shared_types::ServerEventCode::TurnStart)
+                            .data(Some(
+                                shared_types::ServerEventDataBuilder::default()
+                                    .client_id(Some(
+                                        game_state.player_turn_order[game_state.turn_index].clone(),
+                                    ))
+                                    .build()
+                                    .unwrap(),
+                            ))
+                            .build()
+                            .unwrap(),
+                        &session,
+                        clients,
+                    )
+                    .await;
                 }
             }
         }
-        _ => { /* no op */ }
     }
 }
 
@@ -289,15 +287,16 @@ async fn remove_client_from_current_session(
     if let Some(session) = sessions.write().await.get_mut(&session_id) {
         // notify all clients in the sessions that the client will be leaving
         notify_session(
-            &shared_types::ServerEvent::from_event(
-                shared_types::ServerEventCode::ClientLeft,
-                shared_types::ServerEventData {
-                    session_id: None,
-                    client_id: Some(client_id.to_string()),
-                    session_client_ids: None,
-                    game_data: None,
-                },
-            ),
+            &shared_types::EventBuilder::default()
+                .event_code(shared_types::ServerEventCode::ClientLeft)
+                .data(Some(
+                    shared_types::ServerEventDataBuilder::default()
+                        .client_id(Some(client_id.to_string()))
+                        .build()
+                        .unwrap(),
+                ))
+                .build()
+                .unwrap(),
             &session,
             &clients,
         )
@@ -338,15 +337,18 @@ async fn insert_client_into_given_session(
     }
     // notify all clients in the session that the client has joined
     notify_session(
-        &shared_types::ServerEvent::from_event(
-            shared_types::ServerEventCode::ClientJoined,
-            shared_types::ServerEventData {
-                session_id: Some(session.id.clone()),
-                client_id: Some(client_id.to_string()),
-                session_client_ids: Some(session.get_client_ids()),
-                game_data: None,
-            },
-        ),
+        &shared_types::EventBuilder::default()
+            .event_code(shared_types::ServerEventCode::ClientJoined)
+            .data(Some(
+                shared_types::ServerEventDataBuilder::default()
+                    .session_id(Some(session.id.clone()))
+                    .client_id(Some(client_id.to_string()))
+                    .session_client_ids(Some(session.get_client_ids()))
+                    .build()
+                    .unwrap(),
+            ))
+            .build()
+            .unwrap(),
         &session,
         &clients,
     )

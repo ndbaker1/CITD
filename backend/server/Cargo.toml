@@ -17,3 +17,4 @@ serde_repr = "0.1"
 futures = { version = "0.3", default-features = false }
 nanoid = "0.4.0"
 nanorand = "0.5.2"
+derive_builder = "0.10.2"
