@@ -1,0 +1,6 @@
+[workspace]
+members = [
+  "server",
+  "sessions",
+  "connect_in_the_dark",
+]
