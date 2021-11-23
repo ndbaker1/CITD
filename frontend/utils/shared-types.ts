@@ -5,6 +5,7 @@
 export type GameData = {
      turn_index: number,
      player_order: Array<string>,
+     play_indexes: Array<Array<boolean>>,
 }
 
 export type Event<Code, PayloadType> = {
@@ -30,31 +31,31 @@ export type ClientEventData = {
 }
 
 export enum ServerEventCode {
-    /**
-     * Session Related
-     */
-    ClientJoined = 1,
-    ClientLeft,
-    GameStarted,
-    SessionResponse,
-    /**
-     * Game Related
-     */
-    TurnStart,
-    LogicError,
+     /**
+      * Session Related
+      */
+     ClientJoined = 1,
+     ClientLeft,
+     GameStarted,
+     SessionResponse,
+     /**
+      * Game Related
+      */
+     TurnStart,
+     LogicError,
 }
 
 export enum ClientEventCode {
-    /**
-     * Session Related Events
-     */
-    JoinSession = 1,
-    CreateSession,
-    LeaveSession,
-    SessionRequest,
-    /**
-     * Game Related Events
-     */
-    StartGame,
-    Play,
+     /**
+      * Session Related Events
+      */
+     JoinSession = 1,
+     CreateSession,
+     LeaveSession,
+     SessionRequest,
+     /**
+      * Game Related Events
+      */
+     StartGame,
+     Play,
 }

@@ -44,9 +44,10 @@ export default function LoginComponent(): JSX.Element {
         <Input
           label="UserID"
           placeholder="Enter a name"
-          value={getUser()} onChange={event => setUser(event.target.value)}
+          value={getUser()}
+          onChange={event => setUser(event.target.value)}
         />
-        <Button type="submit">
+        <Button type="submit" >
           Connect
         </Button>
       </Stack>

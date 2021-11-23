@@ -1,12 +1,13 @@
 import React from 'react'
 import Head from 'next/head'
-import { ServerConnection } from '../utils/websocket-client'
-import { ServerEventCode, ServerEvent } from '../utils/shared-types'
+import { ServerConnection } from 'utils/websocket-client'
+import { ServerEventCode, ServerEvent } from 'utils/shared-types'
 import { APP_NAME, environment } from 'environment'
 
-import { useSessionData } from '../providers/session.provider'
-import { Screen, useScreen } from '../providers/screen.provider'
-import { useServerConnection } from '../providers/server-connecton.provider'
+import { useSessionData } from 'providers/session.provider'
+import { Screen, useScreen } from 'providers/screen.provider'
+import { useServerConnection } from 'providers/server-connecton.provider'
+import { useGameData } from 'providers/game.provider'
 
 import LobbyComponent from './components/lobby'
 import LoginComponent from './components/login'
@@ -24,6 +25,7 @@ export default function Home(): JSX.Element {
   const { getScreen, setScreen } = useScreen()
   const { setConnection } = useServerConnection()
   const { setSession, getUser, getUsers, setUsers } = useSessionData()
+  const { data, setTurnIndex } = useGameData()
 
   // run once on init
   React.useEffect(() => {
@@ -58,8 +60,11 @@ export default function Home(): JSX.Element {
           setUsers(getUsers().filter(id => id != response.data?.client_id))
         },
         [ServerEventCode.GameStarted]: (response: ServerEvent) => {
-          // setGameData(response.data?.game_data)
-          // setPlayerData(response.data?.player_data)
+          data.player_order = response.data?.game_data?.player_order || []
+          data.turn_index = response.data?.game_data?.turn_index || 0
+          data.play_indexes = response.data?.game_data?.play_indexes || []
+          setTurnIndex(data.turn_index)
+
           notify('Game is starting!')
           setScreen(Screen.Game)
         },
@@ -72,7 +77,10 @@ export default function Home(): JSX.Element {
           setScreen(Screen.Lobby) // set to different state depending on gamedata
         },
         [ServerEventCode.TurnStart]: (response: ServerEvent) => {
-          notify(response.data?.session_id + ' is not a valid Session ID')
+          data.player_order = response.data?.game_data?.player_order || []
+          data.turn_index = response.data?.game_data?.turn_index || 0
+          data.play_indexes = response.data?.game_data?.play_indexes || []
+          setTurnIndex(data.turn_index)
         },
         [ServerEventCode.LogicError]: (response: ServerEvent) => {
           notify(response.message || '')

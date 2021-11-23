@@ -15,12 +15,24 @@ use std::collections::HashMap;
 use warp::ws::Message;
 
 trait ShareableGameData {
-    fn as_shared_game_data(&self) -> GameData;
+    fn as_shared_game_data(&self, client_id: &str) -> GameData;
 }
 
 impl ShareableGameData for GameState {
-    fn as_shared_game_data(&self) -> GameData {
+    fn as_shared_game_data(&self, client_id: &str) -> GameData {
         GameData {
+            play_indexes: self
+                .board
+                .iter()
+                .map(|col| {
+                    col.iter()
+                        .map(|ele| match *ele >= self.player_turn_order.len() {
+                            true => false,
+                            false => self.player_turn_order[*ele] == *client_id,
+                        })
+                        .collect::<Vec<bool>>()
+                })
+                .collect::<Vec<Vec<bool>>>(),
             player_order: self.player_turn_order.clone(),
             turn_index: self.turn_index,
         }
@@ -74,7 +86,7 @@ pub async fn handle_event(
                         data.session_client_ids = Some(session.get_client_ids());
                     }
                     if let Some(game_state) = game_states.read().await.get(&session_id) {
-                        data.game_data = Some(game_state.as_shared_game_data());
+                        data.game_data = Some(game_state.as_shared_game_data(client_id));
                     }
                 }
                 notify_client(&server_event, client);
@@ -142,6 +154,7 @@ pub async fn handle_event(
                 if let Some(client) = clients.read().await.get(client_id) {
                     notify_client(
                         &EventBuilder::default()
+                            .event_code(ServerEventCode::LogicError)
                             .message(format!("Invalid SessionID: {}", session_id))
                             .build()
                             .unwrap(),
@@ -165,7 +178,7 @@ pub async fn handle_event(
                         let game_state = GameState {
                             turn_index: 0,
                             player_turn_order,
-                            board: create_game_board(5, 5),
+                            board: create_game_board(7, 6),
                         };
 
                         game_states
@@ -179,7 +192,7 @@ pub async fn handle_event(
                                 .event_code(ServerEventCode::GameStarted)
                                 .data(
                                     ServerEventDataBuilder::default()
-                                        .game_data(game_state.as_shared_game_data())
+                                        .game_data(game_state.as_shared_game_data(client_id))
                                         .build()
                                         .unwrap(),
                                 )
@@ -197,6 +210,7 @@ pub async fn handle_event(
                                 .data(
                                     ServerEventDataBuilder::default()
                                         .client_id(game_state.get_turn_player())
+                                        .game_data(game_state.as_shared_game_data(client_id))
                                         .build()
                                         .unwrap(),
                                 )
@@ -235,9 +249,20 @@ pub async fn handle_event(
             };
 
             if let Some(game_state) = game_states.write().await.get_mut(&session_id) {
-                // incriment index and wrap around
-                game_state.turn_index =
-                    (game_state.turn_index + 1) % game_state.player_turn_order.len();
+                if game_state.get_turn_player() != client_id {
+                    if let Some(client) = clients.read().await.get(client_id) {
+                        notify_client(
+                            &EventBuilder::default()
+                                .event_code(ServerEventCode::LogicError)
+                                .message("It is not your turn to play.")
+                                .build()
+                                .unwrap(),
+                            &client,
+                        );
+                    }
+                    // exit
+                    return;
+                }
 
                 let player_index = match game_state.get_player_index(client_id) {
                     Some(index) => index,
@@ -247,27 +272,44 @@ pub async fn handle_event(
                 match game_state.play(column, player_index) {
                     Ok(_) => {
                         if let Some(session) = sessions.read().await.get(&session_id) {
-                            notify_session(
-                                &EventBuilder::default()
-                                    .event_code(ServerEventCode::TurnStart)
-                                    .data(
-                                        ServerEventDataBuilder::default()
-                                            .client_id(game_state.get_turn_player())
+                            for (client_name, _) in &session.client_statuses {
+                                if let Some(client) = clients.read().await.get(client_name) {
+                                    notify_client(
+                                        &EventBuilder::default()
+                                            .event_code(ServerEventCode::TurnStart)
+                                            .data(
+                                                ServerEventDataBuilder::default()
+                                                    .client_id(game_state.get_turn_player())
+                                                    .game_data(
+                                                        game_state.as_shared_game_data(client_name),
+                                                    )
+                                                    .build()
+                                                    .unwrap(),
+                                            )
                                             .build()
                                             .unwrap(),
-                                    )
-                                    .build()
-                                    .unwrap(),
-                                &session,
-                                clients,
-                            )
-                            .await;
+                                        &client,
+                                    );
+                                }
+                            }
                         }
                     }
-                    Err(e) => eprintln!(
-                        "[ERROR] player {} failed to play with err: {}",
-                        client_id, e,
-                    ),
+                    Err(e) => {
+                        if let Some(client) = clients.read().await.get(client_id) {
+                            notify_client(
+                                &EventBuilder::default()
+                                    .event_code(ServerEventCode::LogicError)
+                                    .message("This column has reached its max.".to_string())
+                                    .build()
+                                    .unwrap(),
+                                &client,
+                            );
+                        }
+                        eprintln!(
+                            "[ERROR] player {} failed to play with err: {}",
+                            client_id, e,
+                        )
+                    }
                 }
             }
         }

@@ -10,7 +10,7 @@ ROOT_DEPTH = 2  # relies on being in directory /shared/scripts
 ROOT_DIR = str(Path(__file__).resolve().parents[ROOT_DEPTH]).replace('\\', '/')
 
 EVENT_TYPES_RUST_PATH = ROOT_DIR + '/backend/server/src/shared_types.rs'
-EVENT_TYPES_TYPESCRIPT_PATH = ROOT_DIR + '/frontend/src/utils/shared-types.ts'
+EVENT_TYPES_TYPESCRIPT_PATH = ROOT_DIR + '/frontend/utils/shared-types.ts'
 
 
 def convert_rust_syntax_to_ts(rust_string: str):
@@ -36,6 +36,7 @@ def convert_rust_syntax_to_ts(rust_string: str):
         ('usize', 'number'),
         ('HashSet', 'Array'),
         ('HashMap', 'Record'),
+        ('bool', 'boolean'),
         (';', ''),
     ]
 
@@ -67,8 +68,10 @@ def convert_rust_syntax_to_ts(rust_string: str):
 def parse_rust_to_ts():  # Parse into TypeScript module
     with open(EVENT_TYPES_RUST_PATH, 'r') as rust_f:
         lines = []
-        for line in [x for x in rust_f.readlines() if not x.startswith(('#', 'use'))]:  # ignore annotations
-            lines.append(convert_rust_syntax_to_ts(line))
+        for line in rust_f.readlines():  
+            # ignore annotations, use statements
+            if not any(k in line for k in ('#', 'use')):
+                lines.append(convert_rust_syntax_to_ts(line))
 
         print('Preparing to write:\n_______________________')
         [print(x, end='') for x in lines]

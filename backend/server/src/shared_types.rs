@@ -9,6 +9,7 @@ use serde_repr::{Deserialize_repr, Serialize_repr};
 pub struct GameData {
     pub turn_index: usize,
     pub player_order: Vec<String>,
+    pub play_indexes: Vec<Vec<bool>>,
 }
 
 #[derive(Deserialize, Serialize, Builder)]

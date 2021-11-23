@@ -4,7 +4,7 @@ import { useSessionData } from '../../providers/session.provider'
 import { useServerConnection } from '../../providers/server-connecton.provider'
 import { HStack, Stack } from '@chakra-ui/layout'
 import { Button, IconButton } from '@chakra-ui/button'
-import { Input, InputGroup, InputLeftAddon, InputRightElement } from '@chakra-ui/input'
+import { Input, InputGroup, InputLeftAddon, InputRightAddon } from '@chakra-ui/input'
 import { useNotify } from 'providers/notification.provider'
 import { CheckIcon, DownloadIcon } from '@chakra-ui/icons'
 
@@ -33,7 +33,11 @@ function JoinSessionComponent({ goBack }: { goBack: () => void }) {
           value={inputSession}
           onChange={event => setInputSession(event.target.value)}
         />
-        <InputRightElement>
+
+        <InputRightAddon
+          bg="transparent"
+          border="none"
+        >
           <HStack>
             <IconButton
               icon={<CheckIcon />}
@@ -53,7 +57,7 @@ function JoinSessionComponent({ goBack }: { goBack: () => void }) {
               }
             />
           </HStack>
-        </InputRightElement>
+        </InputRightAddon>
       </InputGroup>
 
       <Button onClick={() => goBack()}> Back </Button>
@@ -71,9 +75,9 @@ function NavigateComponent({ join }: { join: () => void }) {
         <InputLeftAddon children="ID" />
         <Input label="UserID" value={getUser()} readOnly />
       </InputGroup>
-      <Button variant="ghost" onClick={() => connection?.disconnect()}> Disconnect </Button>
-      <Button variant="ghost" onClick={() => join()}> Join Session </Button>
-      <Button variant="ghost" onClick={() => connection?.create_session()}> Create Session </Button>
+      <Button onClick={() => connection?.disconnect()}> Disconnect </Button>
+      <Button onClick={() => join()}> Join Session </Button>
+      <Button onClick={() => connection?.create_session()}> Create Session </Button>
     </Stack>
   )
 }

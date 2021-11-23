@@ -5,7 +5,7 @@ import { useServerConnection } from '../../providers/server-connecton.provider'
 import { Screen, useScreen } from '../../providers/screen.provider'
 import { List, Stack, Text } from '@chakra-ui/layout'
 import { Button, IconButton } from '@chakra-ui/button'
-import { Input, InputGroup, InputLeftAddon, InputRightElement } from '@chakra-ui/input'
+import { Input, InputGroup, InputLeftAddon, InputRightAddon, InputRightElement } from '@chakra-ui/input'
 import { CopyIcon } from '@chakra-ui/icons'
 import { useNotify } from 'providers/notification.provider'
 
@@ -21,7 +21,7 @@ export default function LobbyComponent(): JSX.Element {
     <Stack>
       <InputGroup>
         <InputLeftAddon children="ID" />
-        <Input label="UserID" value={getUser()} />
+        <Input value={getUser()} readOnly />
       </InputGroup>
 
       <Button onClick={() => {
@@ -32,7 +32,12 @@ export default function LobbyComponent(): JSX.Element {
       </Button>
 
       <InputGroup>
-        <InputRightElement>
+        <InputLeftAddon children="Session ID" />
+        <Input value={getSession()} readOnly />
+        <InputRightAddon
+          bg="transparent"
+          border="none"
+        >
           <IconButton
             title="Copy to Clipboard"
             aria-label="copy"
@@ -42,13 +47,7 @@ export default function LobbyComponent(): JSX.Element {
                 .then(() => notify('Copied SessionID: ' + getSession()))
             }
           />
-        </InputRightElement>
-        <Input
-          id="session-id"
-          label="Session ID"
-          value={getSession()}
-          readOnly
-        />
+        </InputRightAddon>
       </InputGroup>
 
       <Button onClick={() => { connection?.leave_session() }}>

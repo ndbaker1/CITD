@@ -15,8 +15,7 @@ type GameDataStore = {
 
 export const useGameData = create<GameDataStore>((set, get) => ({
   data: {
-    card_events: [],
-    discard: [],
+    play_indexes: [],
     player_order: [],
     turn_index: 0
   },
