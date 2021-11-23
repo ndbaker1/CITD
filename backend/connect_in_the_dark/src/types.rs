@@ -1,4 +1,4 @@
-use std::{ops::Add, usize::MAX};
+use std::usize::MAX;
 
 #[derive(Clone)]
 pub struct GameState {
@@ -38,7 +38,10 @@ impl GameState {
         }
     }
 
+    /// Searches for a horizontal, vertical, or diagonal chain of a specified length within the grid.
+    /// This is useful for finding out if a player has won the game with a given move
     fn find_connected(&self, length: usize, column: usize, row: usize, player_code: usize) -> bool {
+        // Recursive helper method
         fn find_recursive(
             length: usize,
             board: &GameBoard,
@@ -55,29 +58,29 @@ impl GameState {
                     [((row as i8 + direction[1]) as usize)]
                     == player_code
             {
-                println!("recurseeee: {}", player_code);
-                1 + find_recursive(
+                find_recursive(
                     length - 1,
                     board,
                     direction,
                     (row as i8 + direction[1]) as usize,
                     (column as i8 + direction[0]) as usize,
                     player_code,
-                )
+                ) + 1
             } else {
                 0
             }
         }
 
-        let cardinals: [[[i8; 2]; 2]; 4] = [
-            [[0, 1], [0, -1]],
-            [[1, 1], [-1, -1]],
-            [[1, 0], [-1, 0]],
-            [[1, -1], [-1, 1]],
+        let cardinal_pairs: [([i8; 2], [i8; 2]); 4] = [
+            ([0, 1], [0, -1]),
+            ([1, 1], [-1, -1]),
+            ([1, 0], [-1, 0]),
+            ([1, -1], [-1, 1]),
         ];
-        cardinals
+        cardinal_pairs
             .iter()
-            .map(|[dir1, dir2]| {
+            .map(|(dir1, dir2)| {
+                // total the length of chains going in opposite directions
                 find_recursive(length, &self.board, dir1, row, column, player_code)
                     + find_recursive(length, &self.board, dir2, row, column, player_code)
             })
@@ -103,3 +106,13 @@ pub fn create_game_board(width: usize, height: usize) -> GameBoard {
 
 #[cfg(test)]
 mod tests {}
+
+/*
+ * Win:
+ *  - show the board to everbody
+ *  - fast rematch / back to lobby / back button
+ * Shareable Link
+ *  - link with room id that automatically joins to room
+ *  - reserve room ids
+ *  - color in the different players
+ */

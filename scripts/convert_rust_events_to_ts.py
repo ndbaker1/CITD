@@ -6,7 +6,7 @@ Script to parse events first defined in Rust Server code into TypeScript for Fro
 
 from pathlib import Path
 
-ROOT_DEPTH = 2  # relies on being in directory /shared/scripts
+ROOT_DEPTH = 1  # relies on being in directory /shared/scripts
 ROOT_DIR = str(Path(__file__).resolve().parents[ROOT_DEPTH]).replace('\\', '/')
 
 EVENT_TYPES_RUST_PATH = ROOT_DIR + '/backend/server/src/shared_types.rs'

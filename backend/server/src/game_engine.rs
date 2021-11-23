@@ -350,7 +350,7 @@ async fn notify_session(
 }
 
 /// Send and update to a set of clients
-async fn notify_clients(
+async fn _notify_clients(
     game_update: &ServerEvent,
     client_ids: &Vec<String>,
     clients: &data_types::SafeClients,

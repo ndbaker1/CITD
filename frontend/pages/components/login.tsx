@@ -23,6 +23,7 @@ export default function LoginComponent(): JSX.Element {
       open: () => {
         setScreen(Screen.Menu)
         notify('Connected.')
+        localStorage.setItem('userid', getUser())
         connection.fetchSession()
       },
       error: () => {
