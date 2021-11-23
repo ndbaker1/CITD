@@ -8,7 +8,7 @@ use crate::{
 };
 use connect_in_the_dark::types::{create_game_board, GameState};
 use nanoid::nanoid;
-use nanorand::{WyRand, RNG};
+use nanorand::{Rng, WyRand};
 use serde_json::from_str;
 use sessions::session_types;
 use std::collections::HashMap;
@@ -420,14 +420,21 @@ fn set_new_session_owner(
     // );
 }
 
+/// Attempt to create a new game if the lobby has enough players
 fn initialize_game_data(client_vec: &Vec<String>) -> Result<Vec<String>, &str> {
-    // random gen for shuffling
-    let mut rand = WyRand::new();
-    // shuffle the order characters
-    let mut playerinfo_vec: Vec<String> = client_vec.clone();
-    rand.shuffle(&mut playerinfo_vec);
+    // Check that the game has at least 2 players
+    match client_vec.len() >= 2 {
+        false => Err("Need at least 2 players to start a game."),
+        true => {
+            // random gen for shuffling
+            let mut rand = WyRand::new();
+            // shuffle the order characters
+            let mut playerinfo_vec = client_vec.clone();
+            rand.shuffle(&mut playerinfo_vec);
 
-    return Ok(playerinfo_vec);
+            Ok(playerinfo_vec)
+        }
+    }
 }
 
 /// Gets a random new session 1 that is 5 characters long

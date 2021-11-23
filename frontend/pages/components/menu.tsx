@@ -6,6 +6,7 @@ import { HStack, Stack } from '@chakra-ui/layout'
 import { Button, IconButton } from '@chakra-ui/button'
 import { Input, InputGroup, InputLeftAddon, InputRightElement } from '@chakra-ui/input'
 import { useNotify } from 'providers/notification.provider'
+import { CheckIcon, DownloadIcon } from '@chakra-ui/icons'
 
 export default function MenuComponent(): JSX.Element {
   const [joining, setJoining] = React.useState(false)
@@ -25,20 +26,25 @@ function JoinSessionComponent({ goBack }: { goBack: () => void }) {
 
   return (
     <Stack>
-      <InputGroup size="md">
+      <InputGroup>
         <Input
           label="Session ID"
+          placeholder="Enter a SessionID to Join"
           value={inputSession}
           onChange={event => setInputSession(event.target.value)}
         />
         <InputRightElement>
           <HStack>
             <IconButton
-              aria-label="Join Session"
+              icon={<CheckIcon />}
+              title="Join Session"
+              aria-label="join"
               onClick={() => connection?.join_session(inputSession, notify)}
             />
             <IconButton
-              aria-label="Pull From Clipboard"
+              icon={<DownloadIcon />}
+              title="Pull From Clipboard"
+              aria-label="copy-from-clip"
               onClick={() => navigator.clipboard.readText()
                 .then(session => {
                   setInputSession(session)

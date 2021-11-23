@@ -18,7 +18,7 @@ export default function LoginComponent(): JSX.Element {
   const { setUser, getUser } = useSessionData()
 
   const login = () => {
-
+    setUser(getUser().trim())
     connection?.connect(getUser(), {
       open: () => {
         setScreen(Screen.Menu)

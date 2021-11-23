@@ -2,16 +2,20 @@ use crate::{data_types, game_engine};
 use futures::{FutureExt, StreamExt};
 use sessions::session_types;
 use tokio::sync::mpsc::{self};
+use urlencoding::decode;
 use warp::ws::{Message, WebSocket};
 
 /// The Initial Setup for a WebSocket Connection
 pub async fn client_connection(
     ws: WebSocket,
-    id: String,
+    connection_id: String,
     clients: data_types::SafeClients,
     sessions: data_types::SafeSessions,
     game_states: data_types::SafeGameStates,
 ) {
+    // Decode the strings coming in over URL parameters so we dont get things like '%20'
+    // for spaces in our clients map
+    let id = decode(&connection_id).expect("UTF-8").to_string();
     //======================================================
     // Splits the WebSocket into a Sink + Stream:
     // Sink - Pools the messages to get send to the client
