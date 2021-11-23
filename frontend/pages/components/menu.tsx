@@ -2,65 +2,56 @@ import React from 'react'
 
 import { useSessionData } from '../../providers/session.provider'
 import { useServerConnection } from '../../providers/server-connecton.provider'
-import { Container, Stack, Text } from '@chakra-ui/layout'
-import { Button } from '@chakra-ui/button'
+import { HStack, Stack } from '@chakra-ui/layout'
+import { Button, IconButton } from '@chakra-ui/button'
 import { Input, InputGroup, InputLeftAddon, InputRightElement } from '@chakra-ui/input'
-import { Tooltip } from '@chakra-ui/react'
+import { useNotify } from 'providers/notification.provider'
 
 export default function MenuComponent(): JSX.Element {
   const [joining, setJoining] = React.useState(false)
-  return (
-    <Container d="flex" flexDir="column">
-      {
-        joining
-          ? <JoinSessionComponent goBack={() => setJoining(false)} />
-          : <NavigateComponent join={() => setJoining(true)} />
-      }
-    </Container>
-  )
+
+  return joining
+    ? <JoinSessionComponent goBack={() => setJoining(false)} />
+    : <NavigateComponent join={() => setJoining(true)} />
 }
 
 function JoinSessionComponent({ goBack }: { goBack: () => void }) {
+
+  const notify = useNotify()
+
   const { connection } = useServerConnection()
-  const { log } = useSessionData()
 
   const [inputSession, setInputSession] = React.useState('')
 
   return (
-    <>
-      <div>
-        <InputGroup>
+    <Stack>
+      <InputGroup size="md">
+        <Input
+          label="Session ID"
+          value={inputSession}
+          onChange={event => setInputSession(event.target.value)}
+        />
+        <InputRightElement>
+          <HStack>
+            <IconButton
+              aria-label="Join Session"
+              onClick={() => connection?.join_session(inputSession, notify)}
+            />
+            <IconButton
+              aria-label="Pull From Clipboard"
+              onClick={() => navigator.clipboard.readText()
+                .then(session => {
+                  setInputSession(session)
+                  connection?.join_session(session, notify)
+                })
+              }
+            />
+          </HStack>
+        </InputRightElement>
+      </InputGroup>
 
-          <Input
-            label="Session ID"
-            variant="outlined"
-            value={inputSession}
-            onChange={event => setInputSession(event.target.value)}
-          />
-          <InputRightElement>
-            <Tooltip title="Join">
-              {/* <IconButton
-                onClick={() => connection?.join_session(inputSession, (error) => log(error))}
-              >
-              </IconButton> */}
-            </Tooltip>
-            <Tooltip title="Pull From Clipboard">
-              {/* <IconButton
-                onClick={() => navigator.clipboard.readText()
-                  .then(session => {
-                    setInputSession(session)
-                    connection?.join_session(session, (error) => log(error))
-                  })
-                }>
-              </IconButton> */}
-            </Tooltip>
-          </InputRightElement>
-          <InputRightElement>
-          </InputRightElement>
-        </InputGroup>
-      </div>
       <Button onClick={() => goBack()}> Back </Button>
-    </>
+    </Stack>
   )
 }
 
@@ -70,7 +61,7 @@ function NavigateComponent({ join }: { join: () => void }) {
 
   return (
     <Stack>
-      <InputGroup size="sm">
+      <InputGroup>
         <InputLeftAddon children="ID" />
         <Input label="UserID" value={getUser()} readOnly />
       </InputGroup>

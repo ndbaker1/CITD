@@ -3,55 +3,65 @@ import React from 'react'
 import { useSessionData } from '../../providers/session.provider'
 import { useServerConnection } from '../../providers/server-connecton.provider'
 import { Screen, useScreen } from '../../providers/screen.provider'
-import { Container, List, Stack, Text } from '@chakra-ui/layout'
+import { List, Stack, Text } from '@chakra-ui/layout'
 import { Button, IconButton } from '@chakra-ui/button'
-import { Input, InputGroup, InputRightAddon } from '@chakra-ui/input'
+import { Input, InputGroup, InputLeftAddon, InputRightElement } from '@chakra-ui/input'
 import { CopyIcon } from '@chakra-ui/icons'
+import { useNotify } from 'providers/notification.provider'
 
 export default function LobbyComponent(): JSX.Element {
 
+  const notify = useNotify()
+
   const { connection } = useServerConnection()
-  const { log, getSession, getUser, getUsers } = useSessionData()
+  const { getSession, getUser, getUsers } = useSessionData()
   const { setScreen } = useScreen()
 
   return (
-    <Container>
-      <Text label="UserID" variant="outlined" value={getUser()} />
+    <Stack>
+      <InputGroup>
+        <InputLeftAddon children="ID" />
+        <Input label="UserID" value={getUser()} />
+      </InputGroup>
 
-      <Stack style={{ display: connection?.isOpen() ? 'flex' : 'none', flexDirection: 'column', margin: 'auto' }}>
-        <Button onClick={() => {
-          connection?.disconnect()
-          setScreen(Screen.Login)
-        }}> Disconnect </Button>
+      <Button onClick={() => {
+        connection?.disconnect()
+        setScreen(Screen.Login)
+      }}>
+        Disconnect
+      </Button>
 
-
-        <InputGroup>
-          <Input
-            id="session-id"
-            label="Session ID"
-            value={getSession()}
-            readOnly
+      <InputGroup>
+        <InputRightElement>
+          <IconButton
+            title="Copy to Clipboard"
+            aria-label="copy"
+            icon={<CopyIcon />}
+            onClick={() =>
+              navigator.clipboard.writeText(getSession())
+                .then(() => notify('Copied SessionID: ' + getSession()))
+            }
           />
-          <InputRightAddon>
-            <IconButton aria-label="Copy to Clipboard" icon={<CopyIcon />}
-              onClick={() =>
-                navigator.clipboard.writeText(getSession())
-                  .then(() => log('Copied SessionID: ' + getSession()))
-              } />
-          </InputRightAddon>
-        </InputGroup>
-        <Button onClick={() => {
-          connection?.leave_session()
-        }}>  Leave Session </Button>
+        </InputRightElement>
+        <Input
+          id="session-id"
+          label="Session ID"
+          value={getSession()}
+          readOnly
+        />
+      </InputGroup>
 
-        <Button onClick={() => {
-          connection?.startGame()
-        }}>  Start Game </Button>
+      <Button onClick={() => { connection?.leave_session() }}>
+        Leave Session
+      </Button>
 
-        <UserList users={getUsers()} />
+      <Button onClick={() => { connection?.startGame() }}>
+        Start Game
+      </Button>
 
-      </Stack>
-    </Container>
+      <UserList users={getUsers()} />
+
+    </Stack>
   )
 }
 

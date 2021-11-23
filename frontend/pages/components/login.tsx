@@ -1,38 +1,55 @@
 import React from 'react'
-import { useServerConnection } from '../../providers/server-connecton.provider'
 
-import { useSessionData } from '../../providers/session.provider'
-import { Screen, useScreen } from '../../providers/screen.provider'
-import { Center, Container } from '@chakra-ui/layout'
+import { Stack } from '@chakra-ui/layout'
 import { Button } from '@chakra-ui/button'
 import { Input } from '@chakra-ui/input'
 
+import { useServerConnection } from 'providers/server-connecton.provider'
+import { useSessionData } from 'providers/session.provider'
+import { Screen, useScreen } from 'providers/screen.provider'
+import { useNotify } from "providers/notification.provider"
+
 export default function LoginComponent(): JSX.Element {
+
+  const notify = useNotify()
 
   const { setScreen } = useScreen()
   const { connection } = useServerConnection()
-  const { setUser, log, getUser } = useSessionData()
+  const { setUser, getUser } = useSessionData()
+
+  const login = () => {
+
+    connection?.connect(getUser(), {
+      open: () => {
+        setScreen(Screen.Menu)
+        notify('Connected.')
+        connection.fetchSession()
+      },
+      error: () => {
+        notify('Error: ID may already be taken.')
+      },
+      close: () => {
+        notify('Disconnected..')
+        setScreen(Screen.Login)
+      },
+    })
+  }
 
   return (
-    <Container maxW="10rem" d="flex" flexDir="column">
-      <Input label="UserID" variant="outlined" value={getUser()} onChange={event => setUser(event.target.value)} />
-      <Button onClick={() => {
-        log('Connecting...')
-        connection?.connect(getUser(), {
-          open: () => {
-            setScreen(Screen.Menu)
-            log('Connected..')
-            connection.fetchSession()
-          },
-          error: () => {
-            log('Error: ID may already be taken.')
-          },
-          close: () => {
-            log('Disconnected..')
-            setScreen(Screen.Login)
-          },
-        })
-      }}> Connect </Button>
-    </Container>
+    <form onSubmit={e => {
+      e.preventDefault()
+      login()
+    }}>
+      <Stack>
+        <Input
+          label="UserID"
+          placeholder="Enter a name"
+          value={getUser()} onChange={event => setUser(event.target.value)}
+        />
+        <Button type="submit">
+          Connect
+        </Button>
+      </Stack>
+    </form>
   )
 }

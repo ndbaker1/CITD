@@ -1,3 +1,5 @@
+export const APP_NAME = "Connect In The Dark"
+
 const SSL = !!process.env.GATSBY_SSL
 export const environment = {
   apiDomain: process.env.GATSBY_API_DOMAIN || 'localhost:8000',
