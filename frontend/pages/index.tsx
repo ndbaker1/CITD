@@ -85,6 +85,9 @@ export default function Home(): JSX.Element {
         [ServerEventCode.LogicError]: (response: ServerEvent) => {
           notify(response.message || '')
         },
+        [ServerEventCode.GameEnded]: (response: ServerEvent) => {
+          notify(response.data?.client_id + ' won!' || '')
+        },
       })
     )
   }, [])

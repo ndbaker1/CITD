@@ -270,7 +270,7 @@ pub async fn handle_event(
                 };
 
                 match game_state.play(column, player_index) {
-                    Ok(_) => {
+                    Ok(won) => {
                         if let Some(session) = sessions.read().await.get(&session_id) {
                             for (client_name, _) in &session.client_statuses {
                                 if let Some(client) = clients.read().await.get(client_name) {
@@ -291,6 +291,24 @@ pub async fn handle_event(
                                         &client,
                                     );
                                 }
+                            }
+                            // if the move was a winning move, then notify everyone that the game is over
+                            if won {
+                                notify_session(
+                                    &EventBuilder::default()
+                                        .event_code(ServerEventCode::GameEnded)
+                                        .data(
+                                            ServerEventDataBuilder::default()
+                                                .client_id(client_id)
+                                                .build()
+                                                .unwrap(),
+                                        )
+                                        .build()
+                                        .unwrap(),
+                                    session,
+                                    &clients,
+                                )
+                                .await;
                             }
                         }
                     }

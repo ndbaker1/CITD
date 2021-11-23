@@ -55,6 +55,7 @@ pub enum ServerEventCode {
     ClientJoined = 1,
     ClientLeft,
     GameStarted,
+    GameEnded,
     SessionResponse,
     /**
      * Game Related

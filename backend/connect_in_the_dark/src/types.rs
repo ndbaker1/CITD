@@ -1,4 +1,4 @@
-use std::usize::MAX;
+use std::{ops::Add, usize::MAX};
 
 #[derive(Clone)]
 pub struct GameState {
@@ -28,7 +28,7 @@ impl GameState {
                 // update the ownership in the board
                 self.board[column_index][play_index] = player_index;
                 // determine if this is a winning move
-                Ok(self.find_connected(4, player_index))
+                Ok(self.find_connected(4, column_index, play_index, player_index))
             }
             // error
             None => Err(format!(
@@ -38,8 +38,52 @@ impl GameState {
         }
     }
 
-    fn find_connected(&self, length: usize, player_index: usize) -> bool {
-        false
+    fn find_connected(&self, length: usize, column: usize, row: usize, player_code: usize) -> bool {
+        fn find_recursive(
+            length: usize,
+            board: &GameBoard,
+            direction: &[i8; 2],
+            row: usize,
+            column: usize,
+            player_code: usize,
+        ) -> usize {
+            if length > 0
+                && ((column as i8 + direction[0]) as usize) < board.len()
+                && ((row as i8 + direction[1]) as usize)
+                    < board[((column as i8 + direction[0]) as usize)].len()
+                && board[((column as i8 + direction[0]) as usize)]
+                    [((row as i8 + direction[1]) as usize)]
+                    == player_code
+            {
+                println!("recurseeee: {}", player_code);
+                1 + find_recursive(
+                    length - 1,
+                    board,
+                    direction,
+                    (row as i8 + direction[1]) as usize,
+                    (column as i8 + direction[0]) as usize,
+                    player_code,
+                )
+            } else {
+                0
+            }
+        }
+
+        let cardinals: [[[i8; 2]; 2]; 4] = [
+            [[0, 1], [0, -1]],
+            [[1, 1], [-1, -1]],
+            [[1, 0], [-1, 0]],
+            [[1, -1], [-1, 1]],
+        ];
+        cardinals
+            .iter()
+            .map(|[dir1, dir2]| {
+                find_recursive(length, &self.board, dir1, row, column, player_code)
+                    + find_recursive(length, &self.board, dir2, row, column, player_code)
+            })
+            .max()
+            .unwrap_or(0)
+            >= length - 1
     }
 
     pub fn get_turn_player(&self) -> String {
