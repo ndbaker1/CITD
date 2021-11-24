@@ -8,8 +8,11 @@ import { Button, IconButton } from '@chakra-ui/button'
 import { Input, InputGroup, InputLeftAddon, InputRightAddon } from '@chakra-ui/input'
 import { CopyIcon } from '@chakra-ui/icons'
 import { useNotify } from 'providers/notification.provider'
+import { useRouteUpdater } from 'providers/route-updater.provider'
 
 export default function LobbyComponent(): JSX.Element {
+
+  useRouteUpdater()
 
   const notify = useNotify()
 

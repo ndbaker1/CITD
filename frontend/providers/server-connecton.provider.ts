@@ -26,17 +26,11 @@ export function useLogin() {
   const { setUser } = useSessionData()
   const { connection } = useServerConnection()
 
-  return ({
-    user,
-    success = () => 0,
-    failure = () => 0,
-    close = () => 0,
-  }:
-    { user: string } & LoginEvents
-  ) => {
+  return ({ user, success = () => 0, failure = () => 0, close = () => 0 }: { user: string } & LoginEvents) => {
     connection?.connect(user, {
       open: () => {
         notify('Connected.')
+        setUser(user)
         localStorage.setItem('userid', user)
         connection.fetchSession()
         success()

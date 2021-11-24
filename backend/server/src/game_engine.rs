@@ -11,28 +11,36 @@ use nanoid::nanoid;
 use nanorand::{Rng, WyRand};
 use serde_json::from_str;
 use sessions::session_types;
-use std::collections::HashMap;
+use std::{collections::HashMap, usize::MAX};
 use warp::ws::Message;
 
 trait ShareableGameData {
-    fn as_shared_game_data(&self, client_id: &str) -> GameData;
+    fn as_shared_game_data(&self, player_pov: Option<&str>) -> GameData;
 }
 
 impl ShareableGameData for GameState {
-    fn as_shared_game_data(&self, client_id: &str) -> GameData {
+    fn as_shared_game_data(&self, player_pov: Option<&str>) -> GameData {
         GameData {
-            play_indexes: self
-                .board
-                .iter()
-                .map(|col| {
-                    col.iter()
-                        .map(|ele| match *ele >= self.player_turn_order.len() {
-                            true => false,
-                            false => self.player_turn_order[*ele] == *client_id,
+            play_indexes: match player_pov {
+                None => self.board.clone(),
+                Some(client_id) => {
+                    let player_index = self.get_player_index(client_id).unwrap();
+                    self.board
+                        .iter()
+                        .map(|col| {
+                            col.iter()
+                                .map(|ele| match *ele >= self.player_turn_order.len() {
+                                    true => MAX,
+                                    false => match self.player_turn_order[*ele] == client_id {
+                                        true => player_index,
+                                        false => MAX,
+                                    },
+                                })
+                                .collect()
                         })
-                        .collect::<Vec<bool>>()
-                })
-                .collect::<Vec<Vec<bool>>>(),
+                        .collect()
+                }
+            },
             player_order: self.player_turn_order.clone(),
             turn_index: self.turn_index,
         }
@@ -86,7 +94,7 @@ pub async fn handle_event(
                         data.session_client_ids = Some(session.get_client_ids());
                     }
                     if let Some(game_state) = game_states.read().await.get(&session_id) {
-                        data.game_data = Some(game_state.as_shared_game_data(client_id));
+                        data.game_data = Some(game_state.as_shared_game_data(Some(client_id)));
                     }
                 }
                 notify_client(&server_event, client);
@@ -158,7 +166,7 @@ pub async fn handle_event(
                                 .event_code(ServerEventCode::GameStarted)
                                 .data(
                                     ServerEventDataBuilder::default()
-                                        .game_data(game_state.as_shared_game_data(client_id))
+                                        .game_data(game_state.as_shared_game_data(Some(client_id)))
                                         .build()
                                         .unwrap(),
                                 )
@@ -176,7 +184,7 @@ pub async fn handle_event(
                                 .data(
                                     ServerEventDataBuilder::default()
                                         .client_id(game_state.get_turn_player())
-                                        .game_data(game_state.as_shared_game_data(client_id))
+                                        .game_data(game_state.as_shared_game_data(Some(client_id)))
                                         .build()
                                         .unwrap(),
                                 )
@@ -238,26 +246,6 @@ pub async fn handle_event(
                 match game_state.play(column, player_index) {
                     Ok(won) => {
                         if let Some(session) = sessions.read().await.get(&session_id) {
-                            for (client_name, _) in &session.client_statuses {
-                                if let Some(client) = clients.read().await.get(client_name) {
-                                    notify_client(
-                                        &EventBuilder::default()
-                                            .event_code(ServerEventCode::TurnStart)
-                                            .data(
-                                                ServerEventDataBuilder::default()
-                                                    .client_id(game_state.get_turn_player())
-                                                    .game_data(
-                                                        game_state.as_shared_game_data(client_name),
-                                                    )
-                                                    .build()
-                                                    .unwrap(),
-                                            )
-                                            .build()
-                                            .unwrap(),
-                                        &client,
-                                    );
-                                }
-                            }
                             // if the move was a winning move, then notify everyone that the game is over
                             if won {
                                 notify_session(
@@ -266,6 +254,7 @@ pub async fn handle_event(
                                         .data(
                                             ServerEventDataBuilder::default()
                                                 .client_id(client_id)
+                                                .game_data(game_state.as_shared_game_data(None))
                                                 .build()
                                                 .unwrap(),
                                         )
@@ -275,6 +264,31 @@ pub async fn handle_event(
                                     &clients,
                                 )
                                 .await;
+                            }
+                            // else continue emitting the game format
+                            else {
+                                for (client_name, _) in &session.client_statuses {
+                                    if let Some(client) = clients.read().await.get(client_name) {
+                                        notify_client(
+                                            &EventBuilder::default()
+                                                .event_code(ServerEventCode::TurnStart)
+                                                .data(
+                                                    ServerEventDataBuilder::default()
+                                                        .client_id(game_state.get_turn_player())
+                                                        .game_data(
+                                                            game_state.as_shared_game_data(Some(
+                                                                client_name,
+                                                            )),
+                                                        )
+                                                        .build()
+                                                        .unwrap(),
+                                                )
+                                                .build()
+                                                .unwrap(),
+                                            &client,
+                                        );
+                                    }
+                                }
                             }
                         }
                     }

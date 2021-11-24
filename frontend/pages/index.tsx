@@ -1,5 +1,12 @@
 import React from 'react'
 import Head from 'next/head'
+
+import { Box, Center, HStack, Text } from '@chakra-ui/layout'
+import { useDisclosure } from '@chakra-ui/hooks'
+import { Button } from '@chakra-ui/button'
+import { Input } from '@chakra-ui/input'
+import { Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, ModalOverlay } from '@chakra-ui/react'
+
 import { ServerConnection, verifySessionID } from 'utils/websocket-client'
 import { ServerEventCode, ServerEvent } from 'utils/shared-types'
 import { APP_NAME, environment } from 'environment'
@@ -8,18 +15,13 @@ import { useSessionData } from 'providers/session.provider'
 import { Screen, useScreen } from 'providers/screen.provider'
 import { useLogin, useServerConnection } from 'providers/server-connecton.provider'
 import { useGameData } from 'providers/game.provider'
+import { useNotify } from '../providers/notification.provider'
+import { getRoomId } from 'providers/route-updater.provider'
 
 import LobbyComponent from './components/lobby'
 import LoginComponent from './components/login'
 import MenuComponent from './components/menu'
 import GameComponent from './components/game'
-
-import { Box, Center, HStack, Text } from '@chakra-ui/layout'
-import { useNotify } from '../providers/notification.provider'
-import { useDisclosure } from '@chakra-ui/hooks'
-import { Button } from '@chakra-ui/button'
-import { Input } from '@chakra-ui/input'
-import { Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, ModalOverlay } from '@chakra-ui/react'
 
 
 export default function Home(): JSX.Element {
@@ -86,6 +88,7 @@ export default function Home(): JSX.Element {
         notify(response.message || '')
       },
       [ServerEventCode.GameEnded]: (response: ServerEvent) => {
+        setPlayIndexes(response.data?.game_data?.play_indexes || [])
         notify(response.data?.client_id + ' won!' || '')
       },
     })
@@ -125,14 +128,14 @@ function ScreenRouter({ screen }: { screen: Screen }) {
 function RoomJoinModal() {
 
   const notify = useNotify()
+  const login = useLogin()
   const { setScreen } = useScreen()
-  const { getUser, setUser } = useSessionData()
   const { isOpen, onOpen, onClose } = useDisclosure()
   const { connection } = useServerConnection()
+  const { getUser, setUser } = useSessionData()
 
   const [cachedUser, setCachedUser] = useCached('userid')
   const [roomid, setRoomid] = React.useState<string>('')
-  const login = useLogin()
 
   React.useEffect(() => {
     const errors = verifySessionID(getRoomId() || '')
@@ -143,11 +146,9 @@ function RoomJoinModal() {
 
     onOpen()
     setRoomid(getRoomId() || '')
-
-    const userid = localStorage.getItem('userid') || ''
-    setCachedUser(userid)
-
   }, [])
+
+  React.useEffect(() => { setUser(cachedUser) }, [cachedUser])
 
   return (
     <Modal
@@ -165,6 +166,7 @@ function RoomJoinModal() {
             success: () => {
               connection?.join_session(roomid)
               onClose()
+              setCachedUser(getUser())
             },
             failure: () => setCachedUser('')
           })
@@ -174,7 +176,7 @@ function RoomJoinModal() {
             {
               !!cachedUser
                 ? (
-                  <Text>Join using Id: {cachedUser} ?</Text>
+                  <Text>Join using Id: {getUser()} ?</Text>
                 )
                 : (
                   <Input
@@ -231,9 +233,7 @@ function RoomJoinModal() {
 function useCached(key: string): [string, (val: string) => void] {
   const [value, setValue] = React.useState('')
 
-  React.useEffect(() => {
-    setValue(localStorage.getItem(key) || '')
-  }, [])
+  React.useEffect(() => { setValue(localStorage.getItem(key) || '') }, [])
 
   const updateCache = (val: string) => {
     setValue(val)
@@ -242,6 +242,3 @@ function useCached(key: string): [string, (val: string) => void] {
 
   return [value, updateCache]
 }
-
-const ROOM_ID_KEY = 'roomid'
-const getRoomId = () => new URLSearchParams(window.location.search).get(ROOM_ID_KEY)
