@@ -33,8 +33,8 @@ function JoinSessionComponent({ goBack }: { goBack: () => void }) {
       }}>
         <InputGroup>
           <Input
-            label="Session ID"
-            placeholder="Enter a SessionID to Join"
+            label="RoomID"
+            placeholder="Enter a RoomID to Join"
             value={inputSession}
             onChange={event => setInputSession(event.target.value)}
           />
@@ -45,7 +45,7 @@ function JoinSessionComponent({ goBack }: { goBack: () => void }) {
             <HStack>
               <IconButton
                 icon={<CheckIcon />}
-                title="Join Session"
+                title="Join Room"
                 aria-label="join"
                 type="submit"
               />
@@ -87,8 +87,8 @@ function NavigateComponent({ join }: { join: () => void }) {
       }}>
         Disconnect
       </Button>
-      <Button onClick={() => join()}> Join Session </Button>
-      <Button onClick={() => connection?.create_session()}> Create Session </Button>
+      <Button onClick={() => join()}> Join Room </Button>
+      <Button onClick={() => connection?.create_session()}> Create Room </Button>
     </Stack>
   )
 }

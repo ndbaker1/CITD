@@ -21,6 +21,10 @@ export default function LobbyComponent(): JSX.Element {
   const { getSession, getUser, getUsers } = useSessionData()
   const { setScreen } = useScreen()
 
+  const copyRoomLink = () =>
+    navigator.clipboard.writeText(location.protocol + '//' + location.host + '?roomid=' + getSession())
+      .then(() => notify('Link Copied ✓'))
+
   return (
     <Stack>
       <InputGroup>
@@ -36,26 +40,23 @@ export default function LobbyComponent(): JSX.Element {
       </Button>
 
       <InputGroup>
-        <InputLeftAddon children="Session ID" />
+        <InputLeftAddon children="RoomID" />
         <Input value={getSession()} readOnly />
         <InputRightAddon
           bg="transparent"
           border="none"
         >
           <IconButton
-            title="Copy to Clipboard"
+            title="Get Room Link"
             aria-label="copy"
             icon={<CopyIcon />}
-            onClick={() =>
-              navigator.clipboard.writeText(location.protocol + '//' + location.host + '?roomid=' + getSession())
-                .then(() => notify('Copied SessionID: ' + getSession()))
-            }
+            onClick={copyRoomLink}
           />
         </InputRightAddon>
       </InputGroup>
 
       <Button onClick={() => { connection?.leave_session() }}>
-        Leave Session
+        Leave Room
       </Button>
 
       <Button onClick={() => { connection?.startGame() }}>
