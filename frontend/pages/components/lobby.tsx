@@ -5,7 +5,7 @@ import { useServerConnection } from '../../providers/server-connecton.provider'
 import { Screen, useScreen } from '../../providers/screen.provider'
 import { List, Stack, Text } from '@chakra-ui/layout'
 import { Button, IconButton } from '@chakra-ui/button'
-import { Input, InputGroup, InputLeftAddon, InputRightAddon, InputRightElement } from '@chakra-ui/input'
+import { Input, InputGroup, InputLeftAddon, InputRightAddon } from '@chakra-ui/input'
 import { CopyIcon } from '@chakra-ui/icons'
 import { useNotify } from 'providers/notification.provider'
 
@@ -43,7 +43,7 @@ export default function LobbyComponent(): JSX.Element {
             aria-label="copy"
             icon={<CopyIcon />}
             onClick={() =>
-              navigator.clipboard.writeText(getSession())
+              navigator.clipboard.writeText(location.protocol + '//' + location.host + '?roomid=' + getSession())
                 .then(() => notify('Copied SessionID: ' + getSession()))
             }
           />

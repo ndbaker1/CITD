@@ -3,60 +3,60 @@
  */
 
 export type GameData = {
-     turn_index: number,
-     player_order: Array<string>,
-     play_indexes: Array<Array<boolean>>,
+  turn_index: number,
+  player_order: Array<string>,
+  play_indexes: Array<Array<boolean>>,
 }
 
 export type Event<Code, PayloadType> = {
-     event_code: Code,
-     message?: string,
-     data?: PayloadType,
+  event_code: Code,
+  message?: string,
+  data?: PayloadType,
 }
 
 export type ServerEvent = Event<ServerEventCode, ServerEventData>
 export type ClientEvent = Event<ClientEventCode, ClientEventData>
 
 export type ServerEventData = {
-     session_id?: string,
-     client_id?: string,
-     session_client_ids?: Array<string>,
-     game_data?: GameData,
+  session_id?: string,
+  client_id?: string,
+  session_client_ids?: Array<string>,
+  game_data?: GameData,
 }
 
 export type ClientEventData = {
-     target_ids?: Array<string>,
-     session_id?: string,
-     column?: number,
+  target_ids?: Array<string>,
+  session_id?: string,
+  column?: number,
 }
 
 export enum ServerEventCode {
-    /**
-     * Session Related
-     */
-    ClientJoined = 1,
-    ClientLeft,
-    GameStarted,
-    GameEnded,
-    SessionResponse,
-    /**
-     * Game Related
-     */
-    TurnStart,
-    LogicError,
+  /**
+   * Session Related
+   */
+  ClientJoined = 1,
+  ClientLeft,
+  GameStarted,
+  GameEnded,
+  SessionResponse,
+  /**
+   * Game Related
+   */
+  TurnStart,
+  LogicError,
 }
 
 export enum ClientEventCode {
-    /**
-     * Session Related Events
-     */
-    JoinSession = 1,
-    CreateSession,
-    LeaveSession,
-    SessionRequest,
-    /**
-     * Game Related Events
-     */
-    StartGame,
-    Play,
+  /**
+   * Session Related Events
+   */
+  JoinSession = 1,
+  CreateSession,
+  LeaveSession,
+  SessionRequest,
+  /**
+   * Game Related Events
+   */
+  StartGame,
+  Play,
 }

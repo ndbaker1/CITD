@@ -7,6 +7,7 @@ import { Button, IconButton } from '@chakra-ui/button'
 import { Input, InputGroup, InputLeftAddon, InputRightAddon } from '@chakra-ui/input'
 import { useNotify } from 'providers/notification.provider'
 import { CheckIcon, DownloadIcon } from '@chakra-ui/icons'
+import { Screen, useScreen } from 'providers/screen.provider'
 
 export default function MenuComponent(): JSX.Element {
   const [joining, setJoining] = React.useState(false)
@@ -66,6 +67,7 @@ function JoinSessionComponent({ goBack }: { goBack: () => void }) {
 }
 
 function NavigateComponent({ join }: { join: () => void }) {
+  const { setScreen } = useScreen()
   const { connection } = useServerConnection()
   const { getUser } = useSessionData()
 
@@ -75,7 +77,12 @@ function NavigateComponent({ join }: { join: () => void }) {
         <InputLeftAddon children="ID" />
         <Input label="UserID" value={getUser()} readOnly />
       </InputGroup>
-      <Button onClick={() => connection?.disconnect()}> Disconnect </Button>
+      <Button onClick={() => {
+        connection?.disconnect()
+        setScreen(Screen.Login)
+      }}>
+        Disconnect
+      </Button>
       <Button onClick={() => join()}> Join Session </Button>
       <Button onClick={() => connection?.create_session()}> Create Session </Button>
     </Stack>

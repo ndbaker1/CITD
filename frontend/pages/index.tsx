@@ -1,12 +1,12 @@
 import React from 'react'
 import Head from 'next/head'
-import { ServerConnection } from 'utils/websocket-client'
+import { ServerConnection, verifySessionID } from 'utils/websocket-client'
 import { ServerEventCode, ServerEvent } from 'utils/shared-types'
 import { APP_NAME, environment } from 'environment'
 
 import { useSessionData } from 'providers/session.provider'
 import { Screen, useScreen } from 'providers/screen.provider'
-import { useServerConnection } from 'providers/server-connecton.provider'
+import { useLogin, useServerConnection } from 'providers/server-connecton.provider'
 import { useGameData } from 'providers/game.provider'
 
 import LobbyComponent from './components/lobby'
@@ -14,8 +14,12 @@ import LoginComponent from './components/login'
 import MenuComponent from './components/menu'
 import GameComponent from './components/game'
 
-import { Box, Center } from '@chakra-ui/layout'
+import { Box, Center, HStack, Text } from '@chakra-ui/layout'
 import { useNotify } from '../providers/notification.provider'
+import { useDisclosure } from '@chakra-ui/hooks'
+import { Button } from '@chakra-ui/button'
+import { Input } from '@chakra-ui/input'
+import { Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, ModalOverlay } from '@chakra-ui/react'
 
 
 export default function Home(): JSX.Element {
@@ -24,8 +28,8 @@ export default function Home(): JSX.Element {
 
   const { getScreen, setScreen } = useScreen()
   const { setConnection } = useServerConnection()
-  const { setSession, getUser, setUser, getUsers, setUsers } = useSessionData()
-  const { data, setTurnIndex } = useGameData()
+  const { setSession, getUser, getUsers, setUsers } = useSessionData()
+  const { setTurnIndex, setPlayIndexes, setPlayerOrder } = useGameData()
 
   // run once on init
   React.useEffect(() => {
@@ -60,10 +64,9 @@ export default function Home(): JSX.Element {
         setUsers(getUsers().filter(id => id != response.data?.client_id))
       },
       [ServerEventCode.GameStarted]: (response: ServerEvent) => {
-        data.player_order = response.data?.game_data?.player_order || []
-        data.turn_index = response.data?.game_data?.turn_index || 0
-        data.play_indexes = response.data?.game_data?.play_indexes || []
-        setTurnIndex(data.turn_index)
+        setPlayerOrder(response.data?.game_data?.player_order || [])
+        setPlayIndexes(response.data?.game_data?.play_indexes || [])
+        setTurnIndex(response.data?.game_data?.turn_index || 0)
 
         notify('Game is starting!')
         setScreen(Screen.Game)
@@ -72,15 +75,12 @@ export default function Home(): JSX.Element {
         setSession(response.data?.session_id || '')
         setUsers(response.data?.session_client_ids || [])
         notify('Resumed Previous Session!')
-        // setGameData(response.data?.game_data)
-        // setPlayerData(response.data?.player_data)
         setScreen(Screen.Lobby) // set to different state depending on gamedata
       },
       [ServerEventCode.TurnStart]: (response: ServerEvent) => {
-        data.player_order = response.data?.game_data?.player_order || []
-        data.turn_index = response.data?.game_data?.turn_index || 0
-        data.play_indexes = response.data?.game_data?.play_indexes || []
-        setTurnIndex(data.turn_index)
+        setPlayerOrder(response.data?.game_data?.player_order || [])
+        setPlayIndexes(response.data?.game_data?.play_indexes || [])
+        setTurnIndex(response.data?.game_data?.turn_index || 0)
       },
       [ServerEventCode.LogicError]: (response: ServerEvent) => {
         notify(response.message || '')
@@ -92,29 +92,9 @@ export default function Home(): JSX.Element {
 
     setConnection(newGameServerConnection)
 
-    const searchParams = new URLSearchParams(window.location.search)
-    if (searchParams.has('roomid')) {
-      const roomid = searchParams.get('roomid') as string
-      const userid = localStorage.getItem('userid')
-      if (userid) {
-        newGameServerConnection.connect(userid, {
-          open: () => {
-            setScreen(Screen.Menu)
-            notify('Connected.')
-            setUser(userid)
-            localStorage.setItem('userid', getUser())
-            newGameServerConnection.join_session(roomid)
-          },
-          error: () => {
-            notify('Error: ID may already be taken.')
-          },
-          close: () => {
-            notify('Disconnected..')
-            setScreen(Screen.Login)
-          },
-        })
-      }
-    }
+    // Enter Quick Join mode if there was a room id detected in the URL
+    if (getRoomId()) setScreen(Screen.QuickJoin)
+
   }, [])
 
   return (
@@ -137,5 +117,131 @@ function ScreenRouter({ screen }: { screen: Screen }) {
     case Screen.Menu: return <MenuComponent />
     case Screen.Lobby: return <LobbyComponent />
     case Screen.Game: return <GameComponent />
+    case Screen.QuickJoin: return <RoomJoinModal />
   }
 }
+
+
+function RoomJoinModal() {
+
+  const notify = useNotify()
+  const { setScreen } = useScreen()
+  const { getUser, setUser } = useSessionData()
+  const { isOpen, onOpen, onClose } = useDisclosure()
+  const { connection } = useServerConnection()
+
+  const [cachedUser, setCachedUser] = useCached('userid')
+  const [roomid, setRoomid] = React.useState<string>('')
+  const login = useLogin()
+
+  React.useEffect(() => {
+    const errors = verifySessionID(getRoomId() || '')
+    if (errors) {
+      notify(errors)
+      setScreen(Screen.Login)
+    }
+
+    onOpen()
+    setRoomid(getRoomId() || '')
+
+    const userid = localStorage.getItem('userid') || ''
+    setCachedUser(userid)
+
+  }, [])
+
+  return (
+    <Modal
+      closeOnOverlayClick={false}
+      isOpen={isOpen}
+      onClose={onClose}
+      isCentered
+    >
+      <ModalOverlay />
+      <ModalContent>
+        <form onSubmit={e => {
+          e.preventDefault()
+          login({
+            user: getUser(),
+            success: () => {
+              connection?.join_session(roomid)
+              onClose()
+            },
+            failure: () => setCachedUser('')
+          })
+        }}>
+          <ModalHeader>Join Room [ {roomid} ]</ModalHeader>
+          <ModalBody>
+            {
+              !!cachedUser
+                ? (
+                  <Text>Join using Id: {cachedUser} ?</Text>
+                )
+                : (
+                  <Input
+                    label="UserID"
+                    placeholder="Enter a name"
+                    value={getUser()}
+                    onChange={event => setUser(event.target.value)}
+                  />
+                )
+            }
+          </ModalBody>
+
+          <ModalFooter>
+            {
+              !!cachedUser
+                ? (
+                  <HStack>
+                    <Button
+                      mr={3}
+                      colorScheme="blue"
+                      onClick={() => setCachedUser('')}
+                    >
+                      No
+                    </Button>
+                    <Button
+                      mr={3}
+                      colorScheme="blue"
+                      type="submit"
+                    >
+                      Yes
+                    </Button>
+                  </HStack>
+                )
+                : (
+                  <HStack>
+                    <Button
+                      mr={3}
+                      colorScheme="blue"
+                      type="submit"
+                    >
+                      Connect
+                    </Button>
+                  </HStack>
+                )
+            }
+          </ModalFooter>
+        </form>
+      </ModalContent>
+    </Modal>
+  )
+}
+
+
+function useCached(key: string): [string, (val: string) => void] {
+  const [value, setValue] = React.useState('')
+
+  React.useEffect(() => {
+    setValue(localStorage.getItem(key) || '')
+  }, [])
+
+  const updateCache = (val: string) => {
+    setValue(val)
+    localStorage.setItem(key, val)
+  }
+
+  return [value, updateCache]
+}
+
+const ROOM_ID_KEY = 'roomid'
+const getRoomId = () => new URLSearchParams(window.location.search).get(ROOM_ID_KEY)

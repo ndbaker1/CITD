@@ -14,7 +14,7 @@ export class ServerConnection {
   public connect(user_id: string, callbacks: {
     open: () => void
     close: () => void
-    error: (err: unknown) => void
+    error: (err: any) => void
   }): void {
     const setupConnection = () => {
       this.socket = new W3CWebSocket(`${environment.ws_or_wss}://${environment.apiDomain}/ws/${user_id}`)
@@ -67,9 +67,9 @@ export class ServerConnection {
   public startGame = (): void => this.send_message({ event_code: ClientEventCode.StartGame })
 
   public join_session(session_id: string, errorCallback?: (err: string) => void): void {
-    const error = this.verifySessionID(session_id)
-    if (error) {
-      errorCallback && errorCallback(error)
+    const errors = verifySessionID(session_id)
+    if (errors) {
+      errorCallback && errorCallback(errors)
     } else {
       this.send_message({
         event_code: ClientEventCode.JoinSession,
@@ -87,13 +87,14 @@ export class ServerConnection {
     else
       this.socket.send(JSON.stringify(session_update))
   }
+}
 
-  private verifySessionID(sessionID: string): string {
-    const sessionIDLength = 5
-    const errors: string[] = []
-    if (sessionID.length !== sessionIDLength) {
-      errors.push(`SessionID needs to be ${sessionIDLength} characters`)
-    }
-    return errors.join('')
-  }
+export function verifySessionID(sessionID: string): string {
+  const sessionIDLength = 5
+  const errors: string[] = []
+
+  if (sessionID.length !== sessionIDLength)
+    errors.push(`SessionID needs to be ${sessionIDLength} characters`)
+
+  return errors.join('')
 }

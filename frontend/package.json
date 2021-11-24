@@ -1,6 +1,8 @@
 {
-  "name": "frontend",
-  "private": true,
+  "name": "connect-in-the-dark",
+  "repository": {
+    "url": "https://github.com/ndbaker1/CITD.git"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
