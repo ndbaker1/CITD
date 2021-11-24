@@ -1,14 +1,14 @@
 import React from 'react'
 
 import { Button } from '@chakra-ui/button'
-import { Center, Heading, HStack, Stack, Text, VStack } from '@chakra-ui/layout'
+import { Center, Heading, HStack, Stack, VStack } from '@chakra-ui/layout'
 
 import { useServerConnection } from 'providers/server-connecton.provider'
 import { useGameData } from 'providers/game.provider'
 import { useSessionData } from 'providers/session.provider'
 import { useRouteUpdater } from 'providers/route-updater.provider'
-import { Tag, TagLeftIcon } from '@chakra-ui/tag'
-import { ArrowDownIcon, ArrowRightIcon, ArrowUpDownIcon, ArrowUpIcon } from '@chakra-ui/icons'
+import { Tag } from '@chakra-ui/tag'
+import { ArrowUpIcon } from '@chakra-ui/icons'
 
 
 let colors: string[] = []
