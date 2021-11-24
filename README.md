@@ -3,9 +3,9 @@
 A Modification of Connect-Four where you can't see moves that other players take
 
 ## Development
-`Rust` backend
+`Rust-`[`warp`](https://github.com/seanmonstar/warp) backend 
 
-`NextJS` frontend
+`TypeScript-`[`NextJS`](https://nextjs.org/) frontend
 
 convienent helper script for running the frontend and backend with change-detecting monitors that recompile on file updates
 ```bash
