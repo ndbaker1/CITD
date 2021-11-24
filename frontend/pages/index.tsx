@@ -94,6 +94,10 @@ export default function Home(): JSX.Element {
       [ServerEventCode.LogicError]: (response: ServerEvent) => {
         notify(response.message || '')
       },
+      [ServerEventCode.CannotJoinInProgress]: () => {
+        notify('Cannot join a game that is already in progress.')
+        setScreen(Screen.Menu)
+      },
       [ServerEventCode.GameEnded]: (response: ServerEvent) => {
         setPlayIndexes(response.data?.game_data?.play_indexes || [])
         notify(response.data?.client_id + ' won!' || '')

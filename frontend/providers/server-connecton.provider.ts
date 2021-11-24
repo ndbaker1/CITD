@@ -1,7 +1,9 @@
+import React from 'react'
 import create from 'zustand'
 import { ServerConnection } from '../utils/websocket-client'
 import { useNotify } from './notification.provider'
 import { Mutator } from './provider'
+import { Screen, useScreen } from './screen.provider'
 import { useSessionData } from './session.provider'
 
 type ServerConnectionStore = {
@@ -13,6 +15,11 @@ export const useServerConnection = create<ServerConnectionStore>(set => ({
   setConnection: connection => set({ connection })
 }))
 
+export function useConnectionChecker() {
+  const { connection } = useServerConnection()
+  const { setScreen } = useScreen()
+  React.useEffect(() => { connection ?? setScreen(Screen.Login) }, [connection])
+}
 
 type LoginEvents = {
   success?: () => void,

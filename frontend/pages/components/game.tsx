@@ -3,7 +3,7 @@ import React from 'react'
 import { Button } from '@chakra-ui/button'
 import { Center, Heading, HStack, Stack, VStack } from '@chakra-ui/layout'
 
-import { useServerConnection } from 'providers/server-connecton.provider'
+import { useConnectionChecker, useServerConnection } from 'providers/server-connecton.provider'
 import { useGameData } from 'providers/game.provider'
 import { useSessionData } from 'providers/session.provider'
 import { useRouteUpdater } from 'providers/route-updater.provider'
@@ -19,6 +19,7 @@ let colors: string[] = []
 export default function GameComponent(): JSX.Element {
 
   useRouteUpdater()
+  useConnectionChecker()
 
   const { data } = useGameData()
   const { connection } = useServerConnection()

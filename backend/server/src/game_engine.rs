@@ -1,5 +1,5 @@
 use crate::{
-    data_types,
+    data_types::{self, SafeClients},
     shared_types::{
         ClientEvent, ClientEventCode, EventBuilder, GameData, ServerEvent, ServerEventCode,
         ServerEventDataBuilder,
@@ -20,27 +20,33 @@ trait ShareableGameData {
 
 impl ShareableGameData for GameState {
     fn as_shared_game_data(&self, player_pov: Option<&str>) -> GameData {
+        // mask the data on the board depending on if the POV is a specific player
+        // this means that a player will only see their plays
+        let board_mask = match player_pov {
+            // if there is no POV then return a copy of the full board
+            None => self.board.clone(),
+            // hide all references on the board that are not the indicated player
+            Some(client_id) => {
+                let player_index = self.get_player_index(client_id).unwrap();
+                self.board
+                    .iter()
+                    .map(|col| {
+                        col.iter()
+                            .map(|ele| match *ele >= self.player_turn_order.len() {
+                                true => MAX,
+                                false => match self.player_turn_order[*ele] == client_id {
+                                    true => player_index,
+                                    false => MAX,
+                                },
+                            })
+                            .collect()
+                    })
+                    .collect()
+            }
+        };
+
         GameData {
-            play_indexes: match player_pov {
-                None => self.board.clone(),
-                Some(client_id) => {
-                    let player_index = self.get_player_index(client_id).unwrap();
-                    self.board
-                        .iter()
-                        .map(|col| {
-                            col.iter()
-                                .map(|ele| match *ele >= self.player_turn_order.len() {
-                                    true => MAX,
-                                    false => match self.player_turn_order[*ele] == client_id {
-                                        true => player_index,
-                                        false => MAX,
-                                    },
-                                })
-                                .collect()
-                        })
-                        .collect()
-                }
-            },
+            play_indexes: board_mask,
             player_order: self.player_turn_order.clone(),
             turn_index: self.turn_index,
         }
@@ -77,28 +83,28 @@ pub async fn handle_event(
             };
 
             // create a base server event
-            let mut server_event: ServerEvent = EventBuilder::default()
-                .event_code(ServerEventCode::SessionResponse)
-                .data(
-                    ServerEventDataBuilder::default()
-                        .session_id(session_id.clone())
-                        .build()
-                        .unwrap(),
-                )
+            let mut server_data = ServerEventDataBuilder::default()
+                .session_id(session_id.clone())
                 .build()
                 .unwrap();
 
-            if let Some(client) = clients.read().await.get(client_id) {
-                if let Some(data) = server_event.data.as_mut() {
-                    if let Some(session) = sessions.read().await.get(&session_id) {
-                        data.session_client_ids = Some(session.get_client_ids());
-                    }
-                    if let Some(game_state) = game_states.read().await.get(&session_id) {
-                        data.game_data = Some(game_state.as_shared_game_data(Some(client_id)));
-                    }
-                }
-                notify_client(&server_event, client);
+            if let Some(session) = sessions.read().await.get(&session_id) {
+                server_data.session_client_ids = Some(session.get_client_ids());
             }
+            if let Some(game_state) = game_states.read().await.get(&session_id) {
+                server_data.game_data = Some(game_state.as_shared_game_data(Some(client_id)));
+            }
+
+            notify_client_async(
+                client_id,
+                &EventBuilder::default()
+                    .event_code(ServerEventCode::SessionResponse)
+                    .data(server_data)
+                    .build()
+                    .unwrap(),
+                &clients,
+            )
+            .await;
         }
         ClientEventCode::CreateSession => {
             println!("[INFO] request from {} to create new session", client_id);
@@ -144,6 +150,28 @@ pub async fn handle_event(
                         client_id, session_id
                     );
                     insert_client_into_given_session(client_id, &clients, session).await;
+                }
+                // notify the user that they cannot joing the current session
+                else {
+                    println!(
+                        "[INFO] client {} was not allowed into in-progess session {}",
+                        client_id, session_id
+                    );
+                    notify_client_async(
+                        client_id,
+                        &EventBuilder::default()
+                            .event_code(ServerEventCode::CannotJoinInProgress)
+                            .data(
+                                ServerEventDataBuilder::default()
+                                    .session_id(session_id)
+                                    .build()
+                                    .unwrap(),
+                            )
+                            .build()
+                            .unwrap(),
+                        &clients,
+                    )
+                    .await;
                 }
                 return;
             }
@@ -310,11 +338,7 @@ pub async fn handle_event(
                     Err(e) => {
                         if let Some(client) = clients.read().await.get(client_id) {
                             notify_client(
-                                &EventBuilder::default()
-                                    .event_code(ServerEventCode::LogicError)
-                                    .message("This column has reached its max.".to_string())
-                                    .build()
-                                    .unwrap(),
+                                &quick_server_error("This column has reached its max."),
                                 &client,
                             );
                         }
@@ -415,6 +439,15 @@ async fn _notify_clients(
         if let Some(client) = clients.read().await.get(client_id) {
             notify_client(game_update, client);
         }
+    }
+}
+
+/// Send an update to single clients
+async fn notify_client_async(client_id: &str, game_update: &ServerEvent, clients: &SafeClients) {
+    if let Some(client) = clients.read().await.get(client_id) {
+        notify_client(game_update, client);
+    } else {
+        eprintln!("[ERROR] could not find client: {}", client_id);
     }
 }
 
@@ -587,4 +620,12 @@ async fn get_client_session_id(
     } else {
         None
     }
+}
+
+fn quick_server_error(msg: &str) -> ServerEvent {
+    EventBuilder::default()
+        .event_code(ServerEventCode::LogicError)
+        .message(msg.to_string())
+        .build()
+        .unwrap()
 }

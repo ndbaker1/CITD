@@ -39,6 +39,7 @@ export enum ServerEventCode {
     GameStarted,
     GameEnded,
     SessionResponse,
+    CannotJoinInProgress,
     /**
      * Game Related
      */

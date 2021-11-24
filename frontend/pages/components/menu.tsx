@@ -1,7 +1,7 @@
 import React from 'react'
 
 import { useSessionData } from '../../providers/session.provider'
-import { useServerConnection } from '../../providers/server-connecton.provider'
+import { useConnectionChecker, useServerConnection } from '../../providers/server-connecton.provider'
 import { HStack, Stack } from '@chakra-ui/layout'
 import { Button, IconButton } from '@chakra-ui/button'
 import { Input, InputGroup, InputLeftAddon, InputRightAddon } from '@chakra-ui/input'
@@ -18,6 +18,8 @@ export default function MenuComponent(): JSX.Element {
 }
 
 function JoinSessionComponent({ goBack }: { goBack: () => void }) {
+
+  useConnectionChecker()
 
   const notify = useNotify()
 
