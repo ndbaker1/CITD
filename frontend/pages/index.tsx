@@ -73,8 +73,18 @@ export default function Home(): JSX.Element {
       [ServerEventCode.SessionResponse]: (response: ServerEvent) => {
         setSession(response.data?.session_id || '')
         setUsers(response.data?.session_client_ids || [])
-        notify('Resumed Previous Session!')
-        setScreen(Screen.Lobby) // set to different state depending on gamedata
+
+        if (response.data?.game_data) {
+          notify('Resuming Previous Game!')
+          setPlayerOrder(response.data?.game_data?.player_order || [])
+          setPlayIndexes(response.data?.game_data?.play_indexes || [])
+          setTurnIndex(response.data?.game_data?.turn_index || 0)
+
+          setScreen(Screen.Game)
+        } else {
+          notify('Resuming Previous Lobby!')
+          setScreen(Screen.Lobby)
+        }
       },
       [ServerEventCode.TurnStart]: (response: ServerEvent) => {
         setPlayerOrder(response.data?.game_data?.player_order || [])

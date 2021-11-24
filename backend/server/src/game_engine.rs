@@ -118,10 +118,24 @@ pub async fn handle_event(
                 } // no session was found on a session join request? ¯\(°_o)/¯
             };
 
+            println!(
+                "[INFO] checking if client {} is already in session {}",
+                client_id, session_id
+            );
+            if let Some(session) = sessions.read().await.get(&session_id) {
+                if session.client_statuses.contains_key(client_id) {
+                    println!(
+                        "[INFO] client {} was already in session {}. (no-op)",
+                        client_id, session.id
+                    );
+                    return;
+                }
+            }
+
+            // removing client front session
             remove_client_from_current_session(client_id, clients, sessions, game_states).await;
 
             // Joining Some Session that already exists
-
             if let Some(session) = sessions.write().await.get_mut(&session_id) {
                 // do not allow clients to join an active game
                 if game_states.read().await.get(&session_id).is_none() {
@@ -133,6 +147,7 @@ pub async fn handle_event(
                 }
                 return;
             }
+
             // Attempt to join a Reserved session, which will be created if it doesnt exist
             println!("[INFO] creating a session from id: {}", session_id);
             create_session(client_id, Some(&session_id), &sessions, &clients).await;

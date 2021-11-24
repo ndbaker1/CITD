@@ -3,12 +3,13 @@ import React from 'react'
 import { useSessionData } from '../../providers/session.provider'
 import { useServerConnection } from '../../providers/server-connecton.provider'
 import { Screen, useScreen } from '../../providers/screen.provider'
-import { List, Stack, Text } from '@chakra-ui/layout'
+import { Divider, Heading, HStack, Stack, VStack } from '@chakra-ui/layout'
 import { Button, IconButton } from '@chakra-ui/button'
 import { Input, InputGroup, InputLeftAddon, InputRightAddon } from '@chakra-ui/input'
 import { CopyIcon } from '@chakra-ui/icons'
 import { useNotify } from 'providers/notification.provider'
 import { useRouteUpdater } from 'providers/route-updater.provider'
+import { Tag } from '@chakra-ui/tag'
 
 export default function LobbyComponent(): JSX.Element {
 
@@ -61,6 +62,8 @@ export default function LobbyComponent(): JSX.Element {
         Start Game
       </Button>
 
+      <Divider pt={5} />
+
       <UserList users={getUsers()} />
 
     </Stack>
@@ -69,10 +72,13 @@ export default function LobbyComponent(): JSX.Element {
 
 function UserList({ users }: { users: string[] }) {
   return (
-    <List>
-      {users.map((user, i) => (
-        <Text key={i}>{user}</Text>
-      ))}
-    </List>
+    <VStack>
+      <Heading size="md">
+        Player Lobby
+      </Heading>
+      <HStack>
+        {users.map(player => <Tag> {player} </Tag>)}
+      </HStack>
+    </VStack>
   )
 }
