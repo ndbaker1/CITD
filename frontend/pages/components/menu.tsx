@@ -27,42 +27,46 @@ function JoinSessionComponent({ goBack }: { goBack: () => void }) {
 
   return (
     <Stack>
-      <InputGroup>
-        <Input
-          label="Session ID"
-          placeholder="Enter a SessionID to Join"
-          value={inputSession}
-          onChange={event => setInputSession(event.target.value)}
-        />
-
-        <InputRightAddon
-          bg="transparent"
-          border="none"
-        >
-          <HStack>
-            <IconButton
-              icon={<CheckIcon />}
-              title="Join Session"
-              aria-label="join"
-              onClick={() => connection?.join_session(inputSession, notify)}
-            />
-            <IconButton
-              icon={<DownloadIcon />}
-              title="Pull From Clipboard"
-              aria-label="copy-from-clip"
-              onClick={() => navigator.clipboard.readText()
-                .then(session => {
-                  setInputSession(session)
-                  connection?.join_session(session, notify)
-                })
-              }
-            />
-          </HStack>
-        </InputRightAddon>
-      </InputGroup>
-
+      <form onSubmit={e => {
+        e.preventDefault()
+        connection?.join_session(inputSession, notify)
+      }}>
+        <InputGroup>
+          <Input
+            label="Session ID"
+            placeholder="Enter a SessionID to Join"
+            value={inputSession}
+            onChange={event => setInputSession(event.target.value)}
+          />
+          <InputRightAddon
+            bg="transparent"
+            border="none"
+          >
+            <HStack>
+              <IconButton
+                icon={<CheckIcon />}
+                title="Join Session"
+                aria-label="join"
+                type="submit"
+              />
+              <IconButton
+                icon={<DownloadIcon />}
+                title="Pull From Clipboard"
+                aria-label="copy-from-clip"
+                onClick={() =>
+                  navigator.clipboard.readText()
+                    .then(session => {
+                      setInputSession(session)
+                      connection?.join_session(session, notify)
+                    })
+                }
+              />
+            </HStack>
+          </InputRightAddon>
+        </InputGroup>
+      </form>
       <Button onClick={() => goBack()}> Back </Button>
-    </Stack>
+    </Stack >
   )
 }
 
