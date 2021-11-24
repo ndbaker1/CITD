@@ -93,30 +93,41 @@ pub async fn handle_event(
             }
         }
         ClientEventCode::CreateSession => {
+            println!("[INFO] request from {} to create new session", client_id);
             create_session(client_id, None, &sessions, &clients).await;
         }
         ClientEventCode::JoinSession => {
+            println!("[INFO] request from {} to join new session", client_id);
+
             let session_id = match client_event.data {
                 Some(data) => match data.session_id {
                     Some(session_id) => session_id,
                     None => panic!("no session id found!"),
                 },
-                None => return, // no session was found on a session join request? ¯\(°_o)/¯
+                None => {
+                    println!("[ERROR] the session id to join was missing in the request");
+                    return;
+                } // no session was found on a session join request? ¯\(°_o)/¯
             };
 
             remove_client_from_current_session(client_id, clients, sessions, game_states).await;
 
             // Joining Some Session that already exists
+
             if let Some(session) = sessions.write().await.get_mut(&session_id) {
+                // do not allow clients to join an active game
                 if game_states.read().await.get(&session_id).is_none() {
-                    // do not allow clients to join an active game
+                    println!(
+                        "[INFO] adding client {} into session {}",
+                        client_id, session_id
+                    );
                     insert_client_into_given_session(client_id, &clients, session).await;
                 }
+                return;
             }
             // Attempt to join a Reserved session, which will be created if it doesnt exist
-            else {
-                create_session(client_id, Some(&session_id), &sessions, &clients).await;
-            }
+            println!("[INFO] creating a session from id: {}", session_id);
+            create_session(client_id, Some(&session_id), &sessions, &clients).await;
         }
         ClientEventCode::LeaveSession => {
             remove_client_from_current_session(client_id, clients, sessions, game_states).await;
@@ -296,7 +307,7 @@ async fn create_session(
     sessions: &data_types::SafeSessions,
     clients: &data_types::SafeClients,
 ) {
-    // create a new session
+    println!("[INFO] creating session");
     let session = &mut session_types::Session {
         client_statuses: HashMap::new(),
         owner: client_id.to_string(),
@@ -305,18 +316,30 @@ async fn create_session(
             None => get_rand_session_id(),
         },
     };
+
     // insert the host client into the session
     session.insert_client(&client_id.to_string(), true);
+
+    println!(
+        "[INFO] writing new session {} to global sessions",
+        session.id
+    );
     // add a new session into the server
     sessions
         .write()
         .await
         .insert(session.id.clone(), session.clone());
+
+    println!(
+        "[INFO] attaching session {} to client {}",
+        session.id, client_id
+    );
     // update the session reference within the client
     if let Some(client) = clients.write().await.get_mut(client_id) {
         client.session_id = Some(session.id.clone());
     }
 
+    println!("[INFO] send notification to client {}", client_id);
     if let Some(client) = clients.read().await.get(client_id) {
         notify_client(
             &EventBuilder::default()
@@ -334,10 +357,8 @@ async fn create_session(
             &client,
         );
     }
-    println!(
-        "[INFO] created session :: session count: {}",
-        sessions.read().await.len()
-    );
+    println!("[INFO] finished creating session {}", session.id);
+    println!("[INFO] sessions live: {}", sessions.read().await.len());
 }
 
 /// Send an update to all clients in the session
@@ -391,9 +412,17 @@ async fn remove_client_from_current_session(
     sessions: &data_types::SafeSessions,
     game_states: &data_types::SafeGameStates,
 ) {
+    println!(
+        "[INFO] attempting to remove client {} from their current session",
+        client_id
+    );
+
     let session_id: String = match get_client_session_id(client_id, clients).await {
         Some(s_id) => s_id,
-        None => return, // client did not exist in any session
+        None => {
+            println!("[SKIP] client {} was not in a session", client_id);
+            return;
+        } // client did not exist in any session
     };
 
     let mut session_empty: bool = false;
@@ -416,6 +445,12 @@ async fn remove_client_from_current_session(
         .await;
         // remove the client from the session
         session.remove_client(&client_id.to_string());
+
+        println!(
+            "[INFO] removed client {} from session {}",
+            client_id, session_id
+        );
+
         // revoke the client's copy of the session_id
         if let Some(client) = clients.write().await.get_mut(client_id) {
             client.session_id = None;

@@ -181,9 +181,7 @@ pub async fn cleanup_session(
     sessions.write().await.remove(session_id);
     // remove possible game state
     game_states.write().await.remove(session_id);
-    // log
-    println!(
-        "[INFO] removed empty session :: remaining session count: {}",
-        sessions.read().await.len()
-    );
+    // log status
+    println!("[INFO] removed empty session");
+    println!("[INFO] sessions live: {}", sessions.read().await.len());
 }
