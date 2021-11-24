@@ -93,46 +93,7 @@ pub async fn handle_event(
             }
         }
         ClientEventCode::CreateSession => {
-            // create a new session
-            let session = &mut session_types::Session {
-                client_statuses: HashMap::new(),
-                owner: client_id.to_string(),
-                id: get_rand_session_id(),
-            };
-            // insert the host client into the session
-            session.insert_client(&client_id.to_string(), true);
-            // add a new session into the server
-            sessions
-                .write()
-                .await
-                .insert(session.id.clone(), session.clone());
-            // update the session reference within the client
-            if let Some(client) = clients.write().await.get_mut(client_id) {
-                client.session_id = Some(session.id.clone());
-            }
-
-            if let Some(client) = clients.read().await.get(client_id) {
-                notify_client(
-                    &EventBuilder::default()
-                        .event_code(ServerEventCode::ClientJoined)
-                        .data(
-                            ServerEventDataBuilder::default()
-                                .session_id(session.id.clone())
-                                .client_id(client_id.to_string())
-                                .session_client_ids(session.get_client_ids())
-                                .build()
-                                .unwrap(),
-                        )
-                        .build()
-                        .unwrap(),
-                    &client,
-                );
-            }
-
-            println!(
-                "[INFO] created session :: session count: {}",
-                sessions.read().await.len()
-            );
+            create_session(client_id, None, &sessions, &clients).await;
         }
         ClientEventCode::JoinSession => {
             let session_id = match client_event.data {
@@ -145,22 +106,16 @@ pub async fn handle_event(
 
             remove_client_from_current_session(client_id, clients, sessions, game_states).await;
 
+            // Joining Some Session that already exists
             if let Some(session) = sessions.write().await.get_mut(&session_id) {
                 if game_states.read().await.get(&session_id).is_none() {
                     // do not allow clients to join an active game
                     insert_client_into_given_session(client_id, &clients, session).await;
                 }
-            } else {
-                if let Some(client) = clients.read().await.get(client_id) {
-                    notify_client(
-                        &EventBuilder::default()
-                            .event_code(ServerEventCode::LogicError)
-                            .message(format!("Invalid SessionID: {}", session_id))
-                            .build()
-                            .unwrap(),
-                        &client,
-                    );
-                }
+            }
+            // Attempt to join a Reserved session, which will be created if it doesnt exist
+            else {
+                create_session(client_id, Some(&session_id), &sessions, &clients).await;
             }
         }
         ClientEventCode::LeaveSession => {
@@ -332,6 +287,57 @@ pub async fn handle_event(
             }
         }
     }
+}
+
+/// Creates a Session with a given Client as its creator / first member
+async fn create_session(
+    client_id: &str,
+    session_id: Option<&str>,
+    sessions: &data_types::SafeSessions,
+    clients: &data_types::SafeClients,
+) {
+    // create a new session
+    let session = &mut session_types::Session {
+        client_statuses: HashMap::new(),
+        owner: client_id.to_string(),
+        id: match session_id {
+            Some(id) => id.to_string(),
+            None => get_rand_session_id(),
+        },
+    };
+    // insert the host client into the session
+    session.insert_client(&client_id.to_string(), true);
+    // add a new session into the server
+    sessions
+        .write()
+        .await
+        .insert(session.id.clone(), session.clone());
+    // update the session reference within the client
+    if let Some(client) = clients.write().await.get_mut(client_id) {
+        client.session_id = Some(session.id.clone());
+    }
+
+    if let Some(client) = clients.read().await.get(client_id) {
+        notify_client(
+            &EventBuilder::default()
+                .event_code(ServerEventCode::ClientJoined)
+                .data(
+                    ServerEventDataBuilder::default()
+                        .session_id(session.id.clone())
+                        .client_id(client_id.to_string())
+                        .session_client_ids(session.get_client_ids())
+                        .build()
+                        .unwrap(),
+                )
+                .build()
+                .unwrap(),
+            &client,
+        );
+    }
+    println!(
+        "[INFO] created session :: session count: {}",
+        sessions.read().await.len()
+    );
 }
 
 /// Send an update to all clients in the session
