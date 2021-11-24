@@ -103,7 +103,6 @@ export default function Home(): JSX.Element {
         <title>{APP_NAME}</title>
         <link rel="icon" href="/favicon.ico" />
       </Head>
-
       <Center h="100vh" w="100vw">
         <ScreenRouter screen={getScreen()} />
       </Center>
