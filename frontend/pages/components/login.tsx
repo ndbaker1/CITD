@@ -18,13 +18,7 @@ export default function LoginComponent(): JSX.Element {
 
   return (
     <>
-      <Heading pos="absolute" top="4rem" fontFamily="mono" css="
-        background: linear-gradient(to bottom, rgb(144, 205, 244, 0.7), #101820FF);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-      ">
-        {APP_NAME.toUpperCase()}
-      </Heading>
+      <Title />
 
       <form onSubmit={e => {
         e.preventDefault()
@@ -44,5 +38,22 @@ export default function LoginComponent(): JSX.Element {
         </Stack>
       </form>
     </>
+  )
+}
+
+
+function Title() {
+  return (
+    <Heading
+      pos="absolute"
+      top="4rem"
+      fontFamily="mono"
+      css="color: rgb(144, 205, 244, 0.2)"
+      backgroundImage='url(/smoke.webp)'
+      backgroundSize='cover'
+      backgroundClip='text'
+    >
+      {APP_NAME.toUpperCase()}
+    </Heading>
   )
 }
