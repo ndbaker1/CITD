@@ -14,10 +14,12 @@ import { useLogin, useServerConnection } from 'providers/server-connecton.provid
 import { useSessionData } from 'providers/session.provider'
 
 import { verifySessionID } from 'utils/websocket-client'
+import { useRouter } from 'next/router'
 
 
 export default function RoomJoinModal(): JSX.Element {
 
+  const router = useRouter()
   const notify = useNotify()
   const login = useLogin()
   const { setScreen } = useScreen()
@@ -37,6 +39,10 @@ export default function RoomJoinModal(): JSX.Element {
 
     onOpen()
     setRoomid(getRoomId() || '')
+
+    // consume the roomid after reading it
+    router.replace('', undefined, { shallow: true })
+
   }, [])
 
   React.useEffect(() => { setUser(cachedUser) }, [cachedUser])
@@ -91,7 +97,6 @@ export default function RoomJoinModal(): JSX.Element {
                       </HStack>
                     </Center>
                   </ModalBody>
-                  <ModalFooter />
                 </>
               )
               : (
@@ -109,11 +114,15 @@ export default function RoomJoinModal(): JSX.Element {
                       </Button>
                     </HStack>
                   </ModalBody>
-                  <ModalFooter />
                 </>
               )
           }
         </form>
+        <ModalFooter>
+          <Button onClick={() => { setScreen(Screen.Login) }}>
+            Stop Joining
+          </Button>
+        </ModalFooter>
       </ModalContent>
     </Modal>
   )
