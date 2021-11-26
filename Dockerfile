@@ -7,9 +7,8 @@ RUN cargo build --release
 
 FROM node:lts-alpine as frontend
 WORKDIR /usr/src/app
-COPY package.json package-lock.json ./
-RUN npm ci
 COPY ./frontend .
+RUN npm ci
 RUN npm run build
 
 FROM scratch
