@@ -1,3 +1,5 @@
 #!/bin/bash
-sh -c 'cd backend && cargo watch -x run' \
-& sh -c 'cd frontend && npm i && NEXT_PUBLIC_API_DOMAIN="localhost:8000/api" npm run dev'
+PORT=8080
+
+sh -c "cd backend && PORT=$PORT cargo watch -x run" \
+& sh -c "cd frontend && npm i && NEXT_PUBLIC_API_DOMAIN='localhost:$PORT/api' npm run dev"
