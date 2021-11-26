@@ -80,7 +80,7 @@ function NavigateComponent({ join }: { join: () => void }) {
   return (
     <Stack>
       <InputGroup>
-        <InputLeftAddon children="ID" />
+        <InputLeftAddon>ID</InputLeftAddon>
         <Input label="UserID" value={getUser()} readOnly />
       </InputGroup>
       <Button onClick={() => {

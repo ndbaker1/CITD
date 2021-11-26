@@ -30,7 +30,7 @@ export default function LobbyComponent(): JSX.Element {
   return (
     <Stack>
       <InputGroup>
-        <InputLeftAddon children="ID" />
+        <InputLeftAddon>ID</InputLeftAddon>
         <Input value={getUser()} readOnly />
       </InputGroup>
 
@@ -42,7 +42,7 @@ export default function LobbyComponent(): JSX.Element {
       </Button>
 
       <InputGroup>
-        <InputLeftAddon children="RoomID" />
+        <InputLeftAddon>RoomID</InputLeftAddon>
         <Input value={getSession()} readOnly />
         <InputRightAddon
           bg="transparent"

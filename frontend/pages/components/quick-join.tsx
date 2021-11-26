@@ -1,19 +1,19 @@
-import React from "react"
+import React from 'react'
 
-import { useDisclosure } from "@chakra-ui/hooks"
+import { useDisclosure } from '@chakra-ui/hooks'
 import { Button } from '@chakra-ui/button'
 import { Tag } from '@chakra-ui/tag'
 import { Center, Divider, HStack, Text, VStack } from '@chakra-ui/layout'
 import { Input } from '@chakra-ui/input'
-import { Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, ModalOverlay } from '@chakra-ui/react'
+import { Modal, ModalBody, ModalContent, ModalFooter, ModalHeader } from '@chakra-ui/react'
 
-import { useNotify } from "providers/notification.provider"
-import { getRoomId } from "providers/route-updater.provider"
-import { Screen, useScreen } from "providers/screen.provider"
-import { useLogin, useServerConnection } from "providers/server-connecton.provider"
-import { useSessionData } from "providers/session.provider"
+import { useNotify } from 'providers/notification.provider'
+import { getRoomId } from 'providers/route-updater.provider'
+import { Screen, useScreen } from 'providers/screen.provider'
+import { useLogin, useServerConnection } from 'providers/server-connecton.provider'
+import { useSessionData } from 'providers/session.provider'
 
-import { verifySessionID } from "utils/websocket-client"
+import { verifySessionID } from 'utils/websocket-client'
 
 
 export default function RoomJoinModal(): JSX.Element {
@@ -73,7 +73,7 @@ export default function RoomJoinModal(): JSX.Element {
             </VStack>
           </ModalHeader>
           {
-            !!cachedUser
+            cachedUser
               ? (
                 <>
                   <ModalBody>

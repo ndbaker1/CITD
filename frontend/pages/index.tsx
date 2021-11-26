@@ -1,7 +1,10 @@
 import React from 'react'
 import Head from 'next/head'
 
+import { LogoGithubIcon, RepoIcon } from '@primer/octicons-react'
+
 import { Box, Center } from '@chakra-ui/layout'
+import { Button } from '@chakra-ui/button'
 
 import { ServerConnection } from 'utils/websocket-client'
 import { ServerEventCode, ServerEvent } from 'utils/shared-types'
@@ -116,6 +119,8 @@ export default function Home(): JSX.Element {
       <Center h="100vh" w="100vw">
         <ScreenRouter screen={getScreen()} />
       </Center>
+
+      <Info />
     </Box>
   )
 }
@@ -128,4 +133,23 @@ function ScreenRouter({ screen }: { screen: Screen }) {
     case Screen.Game: return <GameComponent />
     case Screen.QuickJoin: return <RoomJoinModal />
   }
+}
+
+function Info() {
+  const githubRepo = 'https://github.com/ndbaker1/CITD'
+
+  return (
+    <Button
+      as="a"
+      variant="outline"
+      pos="absolute"
+      right={5}
+      bottom={5}
+      href={githubRepo}
+      target="_blank"
+    >
+      <RepoIcon />
+      <LogoGithubIcon />
+    </Button>
+  )
 }

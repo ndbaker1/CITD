@@ -42,13 +42,13 @@ export default function GameComponent(): JSX.Element {
           <Heading>Turn</Heading>
           <HStack>
             {data.player_order.map((player, index) =>
-              <VStack>
+              <VStack key={index}>
                 <Tag
                   size="md"
                   borderBottomWidth="0.5rem"
                   borderBottomColor={getColor(index)}
                 >
-                  {player == getUser() ? "You" : player}
+                  {player == getUser() ? 'You' : player}
                 </Tag>
                 {data.player_order[data.turn_index] != player || <ArrowUpIcon />}
               </VStack>
@@ -59,15 +59,22 @@ export default function GameComponent(): JSX.Element {
       <Stack>
         <HStack>
           {data.play_indexes.map((_, i) =>
-            <Button key={i} onClick={() => connection?.play(i)}></Button>
+            <Button
+              key={i}
+              onClick={() => connection?.play(i)}
+            />
           )}
         </HStack>
 
         <HStack>
-          {data.play_indexes.map(vec =>
-            <VStack>
+          {data.play_indexes.map((vec, j) =>
+            <VStack key={j} >
               {vec.map((_, i) =>
-                <Button borderWidth="1px" bg={getColor(vec[vec.length - i - 1])}></Button>
+                <Button
+                  key={i}
+                  borderWidth="1px"
+                  bg={getColor(vec[vec.length - i - 1])}
+                />
               )}
             </VStack>
           )}
