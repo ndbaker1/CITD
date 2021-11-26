@@ -32,9 +32,6 @@ export default function Home(): JSX.Element {
 
   // run once on init
   React.useEffect(() => {
-    if (environment.healthCheck) // wake up app using the health endpoint
-      fetch(getApiUri() + '/health')
-        .then(() => console.log('health check passed'))
 
     const newGameServerConnection = new ServerConnection({
       [ServerEventCode.ClientJoined]: (response: ServerEvent) => {

@@ -80,7 +80,7 @@ function UserList({ users }: { users: string[] }) {
         Player Lobby
       </Heading>
       <HStack>
-        {users.map(player => <Tag> {player} </Tag>)}
+        {users.map((player, i) => <Tag key={i}> {player} </Tag>)}
       </HStack>
     </VStack>
   )

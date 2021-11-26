@@ -1,6 +1,5 @@
 use server::server;
 use std::env;
-use warp::Filter;
 
 #[tokio::main]
 async fn main() {
@@ -9,8 +8,6 @@ async fn main() {
         .parse()
         .expect("PORT must be a number");
 
-    let server = server().with(warp::cors().allow_any_origin());
-
     println!("[BOOT] server starting on port::{}", port);
-    warp::serve(server).run(([0, 0, 0, 0], port)).await;
+    warp::serve(server()).run(([0, 0, 0, 0], port)).await;
 }
