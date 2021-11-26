@@ -5,7 +5,7 @@ import { ClientEvent, ClientEventCode, ServerEvent, ServerEventCode } from './sh
 
 export class ServerConnection {
   private socket: W3CWebSocket | null = null
-  private eventHandler: (event: IMessageEvent) => void
+  private eventHandler: (event: IMessageEvent) => false
 
   constructor(callbacks: Record<ServerEventCode, (response: ServerEvent) => void>) {
     //=====================================
@@ -15,6 +15,7 @@ export class ServerConnection {
       const response: ServerEvent = JSON.parse(event.data as string)
       // console.log('event handler:', response)
       callbacks[response.event_code](response)
+      return false
     }
   }
 
@@ -88,9 +89,10 @@ export function verifySessionID(sessionID: string): string {
   return errors.join('')
 }
 
+const getSocketProtocol = (): string => location.origin.startsWith("https") ? "wss" : "ws"
 
 export const getApiUri = () =>
   `${location.protocol}//${environment.apiPath ?? (location.hostname + '/api')}`
 
 export const getWebSocketUri = () =>
-  `${location.origin.startsWith("https") ? "wss" : "ws"}://${environment.apiPath ?? (location.hostname + '/api')}/ws`
+  `${getSocketProtocol()}://${environment.apiPath ?? (location.hostname + '/api')}/ws`

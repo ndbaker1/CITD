@@ -25,6 +25,7 @@ pub async fn ws_handler(
             Err(warp::reject::custom(IDAlreadyTaken))
         }
         None => Ok(ws.on_upgrade(move |socket| {
+            println!("[INFO] incoming request for id: {}", id);
             ws::client_connection(socket, id, clients, sessions, game_states)
         })),
     }

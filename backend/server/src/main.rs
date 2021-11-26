@@ -2,8 +2,6 @@ use server::server;
 use std::env;
 use warp::Filter;
 
-const FRONTEND_DEV: &str = "http://localhost:3000";
-
 #[tokio::main]
 async fn main() {
     let port: u16 = env::var("PORT")
@@ -11,7 +9,7 @@ async fn main() {
         .parse()
         .expect("PORT must be a number");
 
-    let server = server().with(warp::cors().allow_origin(FRONTEND_DEV));
+    let server = server().with(warp::cors().allow_any_origin());
 
     println!("[BOOT] server starting on port::{}", port);
     warp::serve(server).run(([0, 0, 0, 0], port)).await;
