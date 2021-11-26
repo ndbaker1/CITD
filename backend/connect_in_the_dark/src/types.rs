@@ -106,13 +106,3 @@ pub fn create_game_board(width: usize, height: usize) -> GameBoard {
 
 #[cfg(test)]
 mod tests {}
-
-/*
- * Win:
- *  - show the board to everbody
- *  - fast rematch / back to lobby / back button
- * Shareable Link
- *  - link with room id that automatically joins to room
- *  - reserve room ids
- *  - color in the different players
- */
