@@ -3,9 +3,9 @@ import Head from 'next/head'
 
 import { Box, Center } from '@chakra-ui/layout'
 
-import { getApiUri, ServerConnection } from 'utils/websocket-client'
+import { ServerConnection } from 'utils/websocket-client'
 import { ServerEventCode, ServerEvent } from 'utils/shared-types'
-import { APP_NAME, environment } from 'environment'
+import { APP_NAME } from 'environment'
 
 import { useSessionData } from 'providers/session.provider'
 import { Screen, useScreen } from 'providers/screen.provider'
@@ -111,7 +111,7 @@ export default function Home(): JSX.Element {
     <Box>
       <Head>
         <title>{APP_NAME}</title>
-        <link rel="icon" href="/favicon.ico" />
+        <link rel="icon" href="/favicon.svg" />
       </Head>
       <Center h="100vh" w="100vw">
         <ScreenRouter screen={getScreen()} />
