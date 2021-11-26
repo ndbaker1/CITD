@@ -3,7 +3,7 @@ import Head from 'next/head'
 
 import { Box, Center } from '@chakra-ui/layout'
 
-import { ServerConnection } from 'utils/websocket-client'
+import { getApiUri, ServerConnection } from 'utils/websocket-client'
 import { ServerEventCode, ServerEvent } from 'utils/shared-types'
 import { APP_NAME, environment } from 'environment'
 
@@ -33,9 +33,8 @@ export default function Home(): JSX.Element {
   // run once on init
   React.useEffect(() => {
     if (environment.healthCheck) // wake up app using the health endpoint
-      fetch(`${environment.http_or_https}://${environment.apiDomain}/health`)
+      fetch(getApiUri() + '/health')
         .then(() => console.log('health check passed'))
-
 
     const newGameServerConnection = new ServerConnection({
       [ServerEventCode.ClientJoined]: (response: ServerEvent) => {
