@@ -11,7 +11,7 @@ COPY ./frontend .
 RUN npm ci
 RUN npm run build
 
-FROM scratch
+FROM scratch as deployment
 COPY --from=frontend /usr/src/app/dist dist
 COPY --from=backend /home/rust/src/target/release/server .
 CMD [ "./server" ]
