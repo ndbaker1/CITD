@@ -1,7 +1,7 @@
 FROM rust:alpine as backend
 WORKDIR /home/rust/src
 RUN apk --no-cache add musl-dev openssl-dev
-COPY . .
+COPY ./backend .
 RUN cargo test --release
 RUN cargo build --release
 
@@ -9,7 +9,7 @@ FROM node:lts-alpine as frontend
 WORKDIR /usr/src/app
 COPY package.json package-lock.json ./
 RUN npm ci
-COPY . .
+COPY ./frontend .
 RUN npm run build
 
 FROM scratch

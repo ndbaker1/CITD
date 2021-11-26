@@ -2,8 +2,11 @@ import { environment } from 'environment'
 import { IMessageEvent, w3cwebsocket as W3CWebSocket } from 'websocket'
 import { ClientEvent, ClientEventCode, ServerEvent, ServerEventCode } from './shared-types'
 
-export const getApiUri = () => `${location.protocol}//${environment.apiPath}`
-export const getWebSocketUri = () => `${location.origin.startsWith("https") ? "wss" : "ws"}://${environment.apiPath}/ws`
+export const getApiUri = () =>
+  `${location.protocol}//${environment.apiPath ?? (location.hostname + '/api')}`
+
+export const getWebSocketUri = () =>
+  `${location.origin.startsWith("https") ? "wss" : "ws"}://${environment.apiPath ?? (location.hostname + '/api')}/ws`
 
 export class ServerConnection {
   private socket: W3CWebSocket | null = null
