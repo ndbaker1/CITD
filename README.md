@@ -30,4 +30,11 @@ Exposes the server to port 80, so that you can visit the app at
 ```
 
 ## Gameplay
+- Clicks squares in the top row to drop a chip into a column.  
+- The current player turn will be displayed above the board.
+- When a player has met the win condition (4 in a row), the complete board become visible to all players.
+- The game will continue even after there is a winner; if you wish to restart then you may do so at any time.
+- If you disconnect from the game then you may rejoin using the same userID and roomID
+
+## 
 ![gameplay ui](./assets/grid.png)
