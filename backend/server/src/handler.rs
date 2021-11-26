@@ -32,5 +32,6 @@ pub async fn ws_handler(
 
 /// Health Check Endpoint used to verify the service is live
 pub async fn health_handler() -> Result<impl Reply> {
+    println!("[INFO] HEALTH_CHECK ✓");
     Ok(StatusCode::OK)
 }

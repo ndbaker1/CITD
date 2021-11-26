@@ -15,4 +15,4 @@ FROM scratch as deployment
 COPY --from=frontend /usr/src/app/out dist
 COPY --from=backend /home/rust/src/target/release/server .
 EXPOSE 8000
-CMD [ "./server" ]
+ENTRYPOINT [ "./server" ]
