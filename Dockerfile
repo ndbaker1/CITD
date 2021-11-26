@@ -2,7 +2,7 @@ FROM rust:alpine as backend
 WORKDIR /home/rust/src
 RUN apk --no-cache add musl-dev openssl-dev
 COPY ./backend .
-# RUN cargo test --release
+RUN cargo test --release
 RUN cargo build --release
 
 FROM node:lts-alpine as frontend
